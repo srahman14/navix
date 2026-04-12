@@ -22,10 +22,12 @@ export default function Home() {
         </div>
         <div className="flex mt-4 space-x-2 items-center">
           <Button className="cursor-pointer" variant={"default"}>
-            <span className="flex items-center justify-content-center space-x-2">
-              <p>use now</p>
-              <MoveRight />
-            </span>
+            <Link href={"/navigation"}>
+              <span className="flex items-center justify-content-center space-x-2">
+                <p>use now</p>
+                <MoveRight />
+              </span>
+            </Link>
           </Button>
           <Button className="cursor-pointer" variant={"default"}>
             <Link href={"https://github.com/srahman14/navix"}>
