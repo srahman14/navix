@@ -1,3 +1,5 @@
+"use client";
+
 import MapComponent from "@/components/map";
 import NavigationSidebar from "@/components/navigation-sidebar";
 import React from "react";
