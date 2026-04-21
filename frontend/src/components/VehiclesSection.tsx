@@ -1,0 +1,85 @@
+"use client";
+
+import React from "react";
+import { CarFront, Plus } from "lucide-react";
+import { Button } from "./ui/button";
+
+interface Vehicle {
+  id: string;
+  status: "active" | "idle";
+  orders: number;
+  load: string;
+}
+
+interface VehiclesSectionProps {
+  vehicles: Vehicle[];
+  onAddVehicle: () => void;
+}
+
+export const VehiclesSection: React.FC<VehiclesSectionProps> = ({
+  vehicles,
+  onAddVehicle,
+}) => {
+  return (
+    <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
+      <nav className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+          Active Vehicles
+        </h2>
+
+        <Button variant={"ghost"} onClick={onAddVehicle}>
+          <Plus />
+          <p>Add Vehicle</p>
+        </Button>
+      </nav>
+
+      {vehicles.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="text-zinc-400 dark:text-zinc-500 mb-2">
+            <CarFront size={32} />
+          </div>
+          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+            No vehicles added.
+          </p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-1">
+            Add a vehicle to get started.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {vehicles.map((vehicle) => (
+            <div
+              key={vehicle.id}
+              className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer transition-colors"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-zinc-900 dark:text-white text-sm">
+                  {vehicle.id}
+                </span>
+                <span
+                  className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                    vehicle.status === "active"
+                      ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
+                      : "bg-zinc-300 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
+                  }`}
+                >
+                  {vehicle.status}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400 mb-2">
+                <span>Orders: {vehicle.orders}</span>
+                <span>Load: {vehicle.load}</span>
+              </div>
+              <div className="w-full h-2 bg-zinc-300 dark:bg-zinc-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 dark:bg-blue-600"
+                  style={{ width: vehicle.load }}
+                ></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
