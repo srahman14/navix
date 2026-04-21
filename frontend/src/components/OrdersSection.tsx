@@ -1,0 +1,79 @@
+"use client";
+
+import React from "react";
+import { Logs, Plus } from "lucide-react";
+import { Button } from "./ui/button";
+
+interface Order {
+  id: string;
+  priority: "high" | "medium" | "low";
+  weight: string;
+}
+
+interface OrdersSectionProps {
+  orders: Order[];
+  onAddOrder: () => void;
+}
+
+export const OrdersSection: React.FC<OrdersSectionProps> = ({
+  orders,
+  onAddOrder,
+}) => {
+  return (
+    <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
+      <nav className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+          Pending Orders
+        </h2>
+
+        <Button variant={"ghost"} onClick={onAddOrder}>
+          <Plus />
+          <p>Add Order</p>
+        </Button>
+      </nav>
+
+      {orders.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="text-zinc-400 dark:text-zinc-500 mb-2">
+            <Logs size={32}/>
+          </div>
+          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+            No pending orders.
+          </p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-1">
+            Create an order to get started.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {orders.map((order) => (
+            <div
+              key={order.id}
+              className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer transition-colors"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-zinc-900 dark:text-white text-sm">
+                  {order.id}
+                </span>
+                <span
+                  className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                    order.priority === "high"
+                      ? "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300"
+                      : order.priority === "medium"
+                      ? "bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300"
+                      : "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                  }`}
+                >
+                  {order.priority}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                Weight: {order.weight}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
