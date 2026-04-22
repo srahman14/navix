@@ -8,30 +8,35 @@ import { VehiclesSection } from "./VehiclesSection";
 import { OrdersSection } from "./OrdersSection";
 import { AddModal } from "./AddModal";
 
-const MockVehicleData = [
-  // { id: "TRUCK-1", status: "active" as const, orders: 4, load: "85%" },
-  // { id: "TRUCK-2", status: "active" as const, orders: 3, load: "72%" },
-  // { id: "VAN-1", status: "idle" as const, orders: 0, load: "0%" },
-  // { id: "TRUCK-3", status: "active" as const, orders: 5, load: "92%" },
-  // { id: "VAN-2", status: "active" as const, orders: 2, load: "45%" },
-];
-
-const MockOrderData = [
-  // { id: "ORD-001", priority: "high" as const, weight: "15 kg" },
-  // { id: "ORD-002", priority: "medium" as const, weight: "8 kg" },
-  // { id: "ORD-003", priority: "high" as const, weight: "22 kg" },
-  // { id: "ORD-004", priority: "low" as const, weight: "5 kg" },
-];
-
-interface NavigationSidebarProps {
-  setPoints: React.Dispatch<React.SetStateAction<Array<{
-    id: string;
-    type: "order" | "vehicle";
-    coordinates: [number, number];
-  }>>>;
+interface Vehicle {
+  id: string;
+  status: "active" | "idle";
+  orders: number;
+  load: string;
+  startLocation: [number, number];
+  orderId?: string;
 }
 
-const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ setPoints }) => {
+interface Order {
+  id: string;
+  priority: "high" | "medium" | "low";
+  weight: string;
+  location: [number, number];
+}
+
+interface NavigationSidebarProps {
+  vehicles: Vehicle[];
+  orders: Order[];
+  setVehicles: React.Dispatch<React.SetStateAction<Vehicle[]>>;
+  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+}
+
+const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
+  vehicles,
+  orders,
+  setVehicles,
+  setOrders,
+}) => {
   const { isOpen, toggleSidebar } = useSidebarStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"vehicle" | "order" | null>(null);
@@ -39,6 +44,22 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ setPoints }) => {
   const handleOpenModal = (type: "vehicle" | "order") => {
     setModalType(type);
     setModalOpen(true);
+  };
+
+  const handleAddVehicle = (vehicle: Vehicle) => {
+    setVehicles((prev) => [...prev, vehicle]);
+  };
+
+  const handleAddOrder = (order: Order) => {
+    setOrders((prev) => [...prev, order]);
+  };
+
+  const handleDeleteVehicle = (vehicleId: string) => {
+    setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+  };
+
+  const handleDeleteOrder = (orderId: string) => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
   };
 
   return (
@@ -60,14 +81,16 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ setPoints }) => {
           <div className="overflow-y-auto h-full">
             {/* Active Vehicles Section */}
             <VehiclesSection
-              vehicles={MockVehicleData}
+              vehicles={vehicles}
               onAddVehicle={() => handleOpenModal("vehicle")}
+              onDeleteVehicle={handleDeleteVehicle}
             />
 
             {/* Pending Orders Section */}
             <OrdersSection
-              orders={MockOrderData}
+              orders={orders}
               onAddOrder={() => handleOpenModal("order")}
+              onDeleteOrder={handleDeleteOrder}
             />
 
             {/* Action Buttons Footer */}
@@ -88,7 +111,9 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ setPoints }) => {
         open={modalOpen}
         onOpenChange={setModalOpen}
         type={modalType}
-        onSubmit={setPoints}
+        orders={orders}
+        onSubmitVehicle={handleAddVehicle}
+        onSubmitOrder={handleAddOrder}
       />
     </>
   );
