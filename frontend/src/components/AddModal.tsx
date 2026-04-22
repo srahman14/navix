@@ -4,15 +4,29 @@ import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 
+interface Vehicle {
+  id: string;
+  status: "active" | "idle";
+  orders: number;
+  load: string;
+  startLocation: [number, number];
+  orderId?: string;
+}
+
+interface Order {
+  id: string;
+  priority: "high" | "medium" | "low";
+  weight: string;
+  location: [number, number];
+}
+
 interface AddModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   type: "vehicle" | "order" | null;
-  onSubmit: React.Dispatch<React.SetStateAction<Array<{
-    id: string;
-    type: "order" | "vehicle";
-    coordinates: [number, number];
-  }>>>;
+  orders: Order[];
+  onSubmitVehicle: (vehicle: Vehicle) => void;
+  onSubmitOrder: (order: Order) => void;
 }
 
 const generateId = (type: string): string => {
@@ -26,12 +40,13 @@ const generateId = (type: string): string => {
   }
 };
 
-export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, onSubmit }) => {
+export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, orders, onSubmitVehicle, onSubmitOrder }) => {
   const [formData, setFormData] = useState({
     id: "",
     type: "",
     latitude: "",
     longitude: "",
+    selectedOrderId: "",
   });
 
   useEffect(() => {
@@ -42,6 +57,7 @@ export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, on
         type: type === "vehicle" ? "Vehicle" : "Order",
         latitude: "",
         longitude: "",
+        selectedOrderId: "",
       });
     }
   }, [open, type]);
@@ -59,14 +75,23 @@ export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, on
       return;
     }
 
-    onSubmit((prev) => [
-      ...prev,
-      {
+    if (type === "vehicle") {
+      onSubmitVehicle({
         id: formData.id,
-        type: type,
-        coordinates: [lng, lat], // IMPORTANT: [lng, lat]
-      },
-    ]);
+        status: "idle",
+        orders: 0,
+        load: "0%",
+        startLocation: [lng, lat],
+        orderId: formData.selectedOrderId || undefined,
+      });
+    } else {
+      onSubmitOrder({
+        id: formData.id,
+        priority: "low",
+        weight: "0 kg",
+        location: [lng, lat],
+      });
+    }
 
     onOpenChange(false);
   };
@@ -114,6 +139,29 @@ export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, on
                 className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white cursor-not-allowed opacity-75"
               />
             </div>
+
+            {/* Order Selection - Only for Vehicles */}
+            {type === "vehicle" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Assign Order (Optional)
+                </label>
+                <select
+                  value={formData.selectedOrderId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, selectedOrderId: e.target.value })
+                  }
+                  className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
+                >
+                  <option value="">None</option>
+                  {orders.map((order) => (
+                    <option key={order.id} value={order.id}>
+                      {order.id} - {order.priority}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Latitude Field - Editable */}
             <div className="space-y-2">
