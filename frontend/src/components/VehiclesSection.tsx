@@ -14,11 +14,13 @@ interface Vehicle {
 interface VehiclesSectionProps {
   vehicles: Vehicle[];
   onAddVehicle: () => void;
+  onDeleteVehicle: (vehicleId: string) => void;
 }
 
 export const VehiclesSection: React.FC<VehiclesSectionProps> = ({
   vehicles,
   onAddVehicle,
+  onDeleteVehicle,
 }) => {
   return (
     <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
@@ -50,21 +52,30 @@ export const VehiclesSection: React.FC<VehiclesSectionProps> = ({
           {vehicles.map((vehicle) => (
             <div
               key={vehicle.id}
-              className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer transition-colors"
+              className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-zinc-900 dark:text-white text-sm">
                   {vehicle.id}
                 </span>
-                <span
-                  className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                    vehicle.status === "active"
-                      ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
-                      : "bg-zinc-300 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
-                  }`}
-                >
-                  {vehicle.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                      vehicle.status === "active"
+                        ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
+                        : "bg-zinc-300 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
+                    }`}
+                  >
+                    {vehicle.status}
+                  </span>
+                  <button
+                    onClick={() => onDeleteVehicle(vehicle.id)}
+                    className="text-zinc-500 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400 transition-colors"
+                    title="Delete vehicle"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
               <div className="flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400 mb-2">
                 <span>Orders: {vehicle.orders}</span>
