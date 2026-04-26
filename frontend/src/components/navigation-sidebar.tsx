@@ -101,6 +101,9 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
               <button className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold rounded-lg transition-colors">
                 View Reports
               </button>
+              <button className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold rounded-lg transition-colors">
+                Get route
+              </button>
             </div>
           </div>
         </motion.div>
