@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@mapbox/polyline": "^1.2.1",
     "@radix-ui/react-dialog": "^1.1.15",
     "@vis.gl/react-maplibre": "^8.1.1",
     "class-variance-authority": "^0.7.1",
