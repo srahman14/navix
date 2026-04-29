@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import Map, { Source, Layer } from "@vis.gl/react-maplibre";
 import type { FeatureCollection, Point, LineString } from "geojson";
+import polyline from "@mapbox/polyline";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useTheme } from "next-themes";
 
@@ -27,117 +28,139 @@ interface MapComponentProps {
   orders: Order[];
 }
 
-
-
 const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
   const [viewState, setViewState] = useState({
-    longitude: -0.1277,
-    latitude: 51.5072,
-    zoom: 10,
+    longitude: -0.1182,
+    latitude: 51.4971,
+    zoom: 13,
   });
+  const [routeData, setRouteData] = useState<FeatureCollection<LineString> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { resolvedTheme } = useTheme();
-  const [routeCoords, setRouteCoords] = useState<Array<{
-    vehicleId: string;
-    coordinates: [number, number][];
-  }>>([]);
+
+  // Fetch route from OpenRouteService
+  useEffect(() => {
+    const fetchRoute = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Test coordinates - realistic London street locations
+        const startCoords = [-0.1606, 51.4769]; // [lon, lat] Elephant & Castle
+        const endCoords = [-0.0759, 51.5173]; // Tower of London
+
+        // OpenRouteService API endpoint
+        const apiKey = process.env.NEXT_PUBLIC_ORS_API_KEY || "";
+
+        if (!apiKey) {
+          console.warn(
+            "OpenRouteService API key not found. Please add NEXT_PUBLIC_ORS_API_KEY to your .env.local"
+          );
+          // Still create a basic route for testing
+          const basicRoute: FeatureCollection<LineString> = {
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature",
+                geometry: {
+                  type: "LineString",
+                  coordinates: [startCoords, endCoords],
+                },
+                properties: {},
+              },
+            ],
+          };
+          setRouteData(basicRoute);
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(
+          `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              coordinates: [startCoords, endCoords],
+              format: "geojson",
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `OpenRouteService API error: ${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = await response.json();
+        console.log({data})
+
+        // Check the correct path: data.data.routes[0]
+        if (data?.routes && data.routes.length > 0) {
+          const route = data.routes[0];
+          console.log("Route geometry:", route.geometry);
+          console.log("Route summary:", route.summary);
+          
+          // Decode polyline geometry to coordinates
+          const coordinates = polyline.toGeoJSON(route.geometry).coordinates as [number, number][];
+          
+          const routeFeature: FeatureCollection<LineString> = {
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature",
+                geometry: {
+                  type: "LineString",
+                  coordinates: coordinates,
+                },
+                properties: {
+                  distance: route.summary?.distance,
+                  duration: route.summary?.duration,
+                },
+              },
+            ],
+          };
+          setRouteData(routeFeature);
+        }
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to fetch route";
+        setError(errorMessage);
+        console.error("Route fetch error:", err);
+
+        // Fallback to basic line with updated coordinates
+        const startCoords = [-0.1606, 51.4769];
+        const endCoords = [-0.0759, 51.5173];
+        const basicRoute: FeatureCollection<LineString> = {
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              geometry: {
+                type: "LineString",
+                coordinates: [startCoords, endCoords],
+              },
+              properties: {},
+            },
+          ],
+        };
+        setRouteData(basicRoute);
+        
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRoute();
+  }, []);
+
 
   // Filter vehicles that have orders attached
   const vehiclesWithOrders = vehicles.filter((v) => v.orderId);
-  
-const fetchRoute = async (start: [number, number], end: [number, number]) => {
-  const res = await fetch("/api/route", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ start, end }),
-  });
-
-  const data = await res.json();
-  return data;
-};
-const handleFetchRoute = async () => {
-  if (vehicles.length === 0 || orders.length === 0) {
-    alert("Add at least one vehicle and one order");
-    return;
-  }
-
-  const vehicle = vehicles[0];
-  const order = orders[0];
-
-  try {
-    const data = await fetchRoute(
-      vehicle.startLocation,
-      order.location
-    );
-
-    console.log({data})
-    const coords = data.features[0].geometry.coordinates;
-
-    setRouteCoords(coords);
-  } catch (err) {
-    console.error("Route fetch failed:", err);
-  }
-};
-
-  // Fetch routes for all vehicles with orders
-  // useEffect(() => {
-  //   const fetchRoutesForVehicles = async () => {
-  //     const routes = await Promise.all(
-  //       vehiclesWithOrders.map(async (vehicle) => {
-  //         const order = orders.find((o) => o.id === vehicle.orderId);
-  //         if (!order) return null;
-          
-  //         try {
-  //           const routeData = await fetchRoute(vehicle.startLocation, order.location);
-            
-  //           // Extract coordinates from OpenRouteService response
-  //           if (routeData.features && routeData.features[0]) {
-  //             const coordinates = routeData.features[0].geometry.coordinates;
-  //             return {
-  //               vehicleId: vehicle.id,
-  //               coordinates: coordinates as [number, number][],
-  //             };
-  //           }
-  //         } catch (error) {
-  //           console.error(`Failed to fetch route for vehicle ${vehicle.id}:`, error);
-  //         }
-  //         return null;
-  //       })
-  //     );
-      
-  //     setRouteCoords(routes.filter((route): route is NonNullable<typeof route> => route !== null));
-  //   };
-
-  //   if (vehiclesWithOrders.length > 0) {
-  //     fetchRoutesForVehicles();
-  //   }
-  // }, [vehiclesWithOrders, orders]);
-
-//   useEffect(() => {
-//   const getRoute = async () => {
-//     if (vehicles.length === 0 || orders.length === 0) return;
-
-//     const vehicle = vehicles[0];
-//     const order = orders[0];
-
-//     try {
-//       const routeData = await fetchRoute(
-//         vehicle.startLocation,
-//         order.location
-//       );
-
-//       const coordinates =
-//         routeData.features[0].geometry.coordinates;
-
-//       setRouteCoords(coordinates);
-//     } catch (error) {
-//       console.error("Route fetch failed:", error);
-//     }
-//   };
-
-//   getRoute();
-// }, [vehicles, orders]);
 
   // Convert vehicles to GeoJSON points (all vehicles, not just those with orders)
   const vehiclePoints: FeatureCollection<Point> = {
@@ -172,31 +195,23 @@ const handleFetchRoute = async () => {
     })),
   };
 
-  // Route with actual directions from OpenRouteService
-  const route: FeatureCollection<LineString> = {
-    type: "FeatureCollection",
-    features: routeCoords.map((route) => ({
-      type: "Feature" as const,
-      geometry: {
-        type: "LineString" as const,
-        coordinates: route.coordinates,
-      },
-      properties: {
-        vehicleId: route.vehicleId,
-      },
-    })),
-  };
-
   const mapStyle =
     resolvedTheme === "dark"
       ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
       : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
   return (
-    <div className="w-full h-screen">
-      <button onClick={handleFetchRoute}>
-        Get route
-      </button>
+    <div className="w-full h-screen relative">
+      {loading && (
+        <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 p-3 rounded shadow z-10">
+          <p className="text-sm text-gray-700 dark:text-gray-300">Loading route...</p>
+        </div>
+      )}
+      {error && (
+        <div className="absolute top-4 left-4 bg-red-100 dark:bg-red-900 p-3 rounded shadow z-10">
+          <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
+        </div>
+      )}
       <Map
         {...viewState}
         onMove={(e) => setViewState(e.viewState)}
@@ -225,16 +240,18 @@ const handleFetchRoute = async () => {
           />
         </Source>
 
-        {/* Route */}
-        <Source id="route" type="geojson" data={route}>
-          <Layer
-            type="line"
-            paint={{
-              "line-color": "#ffffff",
-              "line-width": 2,
-            }}
-          />
-        </Source>
+        {/* OpenRouteService Route */}
+        {routeData && (
+          <Source id="route" type="geojson" data={routeData}>
+            <Layer
+              type="line"
+              paint={{
+                "line-color": "#10b981",
+                "line-width": 3,
+              }}
+            />
+          </Source>
+        )}
       </Map>
     </div>
   );
