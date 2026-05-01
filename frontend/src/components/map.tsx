@@ -3,9 +3,9 @@
 import React, { useCallback, useMemo, useState, useEffect } from "react";
 import Map, { Source, Layer } from "@vis.gl/react-maplibre";
 import type { FeatureCollection, Point, LineString } from "geojson";
-import polyline from "@mapbox/polyline";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useTheme } from "next-themes";
+import { getRoute } from "@/lib/api";
 
 interface Vehicle {
   id: string;
@@ -34,7 +34,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
     latitude: 51.4971,
     zoom: 13,
   });
-  const [routeData, setRouteData] = useState<FeatureCollection<LineString> | null>(null);
+  const [routeData, setRouteData] =
+    useState<FeatureCollection<LineString> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { resolvedTheme } = useTheme();
@@ -50,64 +51,17 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
         const startCoords = [-0.1606, 51.4769]; // [lon, lat] Elephant & Castle
         const endCoords = [-0.0759, 51.5173]; // Tower of London
 
-        // OpenRouteService API endpoint
-        const apiKey = process.env.NEXT_PUBLIC_ORS_API_KEY || "";
+        const coords = [
+          [-0.1606, 51.4769],
+          [-0.0759, 51.5173],
+        ];
 
-        if (!apiKey) {
-          console.warn(
-            "OpenRouteService API key not found. Please add NEXT_PUBLIC_ORS_API_KEY to your .env.local"
-          );
-          // Still create a basic route for testing
-          const basicRoute: FeatureCollection<LineString> = {
-            type: "FeatureCollection",
-            features: [
-              {
-                type: "Feature",
-                geometry: {
-                  type: "LineString",
-                  coordinates: [startCoords, endCoords],
-                },
-                properties: {},
-              },
-            ],
-          };
-          setRouteData(basicRoute);
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch(
-          `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              coordinates: [startCoords, endCoords],
-              format: "geojson",
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            `OpenRouteService API error: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const data = await response.json();
-        console.log({data})
+        const routeData = await getRoute(coords);
 
         // Check the correct path: data.data.routes[0]
-        if (data?.routes && data.routes.length > 0) {
-          const route = data.routes[0];
-          console.log("Route geometry:", route.geometry);
-          console.log("Route summary:", route.summary);
-          
-          // Decode polyline geometry to coordinates
-          const coordinates = polyline.toGeoJSON(route.geometry).coordinates as [number, number][];
-          
+        if (routeData?.routes && routeData.routes.length > 0) {
+          const routeCoordinates = routeData.geometry.decodedCoordinates;
+
           const routeFeature: FeatureCollection<LineString> = {
             type: "FeatureCollection",
             features: [
@@ -115,11 +69,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
                 type: "Feature",
                 geometry: {
                   type: "LineString",
-                  coordinates: coordinates,
+                  coordinates: routeCoordinates,
                 },
                 properties: {
-                  distance: route.summary?.distance,
-                  duration: route.summary?.duration,
+                  distance: routeData.route.summary?.distance,
+                  duration: routeData.route.summary?.duration,
                 },
               },
             ],
@@ -135,6 +89,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
         // Fallback to basic line with updated coordinates
         const startCoords = [-0.1606, 51.4769];
         const endCoords = [-0.0759, 51.5173];
+
         const basicRoute: FeatureCollection<LineString> = {
           type: "FeatureCollection",
           features: [
@@ -149,7 +104,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
           ],
         };
         setRouteData(basicRoute);
-        
       } finally {
         setLoading(false);
       }
@@ -157,7 +111,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
 
     fetchRoute();
   }, []);
-
 
   // Filter vehicles that have orders attached
   const vehiclesWithOrders = vehicles.filter((v) => v.orderId);
@@ -204,7 +157,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
     <div className="w-full h-screen relative">
       {loading && (
         <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 p-3 rounded shadow z-10">
-          <p className="text-sm text-gray-700 dark:text-gray-300">Loading route...</p>
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            Loading route...
+          </p>
         </div>
       )}
       {error && (
