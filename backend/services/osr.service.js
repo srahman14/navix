@@ -31,7 +31,7 @@ export const fetchFromOSR = async (url, coordinates) => {
     return {
         bbox: data.bbox,
         metadata: data.metadata,
-        route: {
+        routes: {
             summary: route.summary,
             segments: route.segments,
             bbox: route.bbox,

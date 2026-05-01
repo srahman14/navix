@@ -58,9 +58,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
 
         const routeData = await getRoute(coords);
 
-        // Check the correct path: data.data.routes[0]
-        if (routeData?.routes && routeData.routes.length > 0) {
-          const routeCoordinates = routeData.geometry.decodedCoordinates;
+        if (routeData?.routes && routeData.geometry) {
+          console.log("ROUTE COORDINATES")
+          const routeCoordinates = routeData.geometry.decoded;
 
           const routeFeature: FeatureCollection<LineString> = {
             type: "FeatureCollection",
@@ -72,8 +72,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
                   coordinates: routeCoordinates,
                 },
                 properties: {
-                  distance: routeData.route.summary?.distance,
-                  duration: routeData.route.summary?.duration,
+                  distance: routeData.routes.summary?.distance,
+                  duration: routeData.routes.summary?.duration,
                 },
               },
             ],
