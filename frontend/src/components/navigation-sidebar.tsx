@@ -7,7 +7,9 @@ import { useNavigationStore } from "@/store/navigation-store";
 import { SidebarHeader } from "./SidebarHeader";
 import { VehiclesSection } from "./VehiclesSection";
 import { OrdersSection } from "./OrdersSection";
-import { AddModal } from "./AddModal";
+import { AddVehicleModal } from "./AddVehicleModal";
+import { AddOrderModal } from "./AddOrderModal";
+import RouteInfo from "./RouteInfo";
 
 const NavigationSidebar: React.FC = () => {
   const { isOpen, toggleSidebar } = useSidebarStore();
@@ -38,6 +40,8 @@ const NavigationSidebar: React.FC = () => {
       >
         {/* Header with Search and Stats */}
         <SidebarHeader isOpen={isOpen} onToggleSidebar={toggleSidebar} />
+        {/* Current Route Information */}
+        <RouteInfo />
 
         {/* Scrollable Content Container */}
         <motion.div
@@ -68,17 +72,28 @@ const NavigationSidebar: React.FC = () => {
         </motion.div>
       </motion.div>
 
-      {/* Add Modal */}
-      <AddModal
-        open={isModalOpen}
-        onOpenChange={(open) => {
-          if (!open) closeModal();
-        }}
-        type={modalType}
-        orders={orders}
-        onSubmitVehicle={handleAddVehicle}
-        onSubmitOrder={handleAddOrder}
-      />
+      {/* Add Vehicle Modal */}
+      {modalType === "vehicle" && (
+        <AddVehicleModal
+          open={isModalOpen}
+          onOpenChange={(open) => {
+            if (!open) closeModal();
+          }}
+          orders={orders}
+          onSubmitVehicle={handleAddVehicle}
+        />
+      )}
+
+      {/* Add Order Modal */}
+      {modalType === "order" && (
+        <AddOrderModal
+          open={isModalOpen}
+          onOpenChange={(open) => {
+            if (!open) closeModal();
+          }}
+          onSubmitOrder={handleAddOrder}
+        />
+      )}
     </>
   );
 };
