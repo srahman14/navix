@@ -3,69 +3,58 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
+import type { Vehicle, Order } from "@/types";
 
-interface Vehicle {
-  id: string;
-  status: "active" | "idle";
-  orders: number;
-  load: string;
-  startLocation: [number, number];
-  orderId?: string;
-}
-
-interface Order {
-  id: string;
-  priority: "high" | "medium" | "low";
-  weight: string;
-  location: [number, number];
-}
-
-interface AddModalProps {
+interface AddVehicleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  type: "vehicle" | "order" | null;
   orders: Order[];
   onSubmitVehicle: (vehicle: Vehicle) => void;
-  onSubmitOrder: (order: Order) => void;
 }
 
-const generateId = (type: string): string => {
-  const timestamp = Date.now();
-  if (type === "vehicle") {
-    const prefixes = ["TRUCK", "VAN"];
-    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-    return `${prefix}-${Math.floor(Math.random() * 1000)}`;
-  } else {
-    return `ORD-${timestamp.toString().slice(-6)}`;
-  }
+const generateVehicleId = (): string => {
+  const prefixes = ["TRUCK", "VAN"];
+  const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+  return `${prefix}-${Math.floor(Math.random() * 1000)}`;
 };
 
-export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, orders, onSubmitVehicle, onSubmitOrder }) => {
-  const [formData, setFormData] = useState({
+export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
+  open,
+  onOpenChange,
+  orders,
+  onSubmitVehicle,
+}) => {
+  const [formData, setFormData] = useState<{
+    id: string;
+    status: "active" | "pending" | "idle";
+    load: number;
+    latitude: string;
+    longitude: string;
+    selectedOrderId: string;
+  }>({
     id: "",
-    type: "",
+    status: "idle",
+    load: 0,
     latitude: "",
     longitude: "",
     selectedOrderId: "",
   });
 
   useEffect(() => {
-    if (open && type) {
-      const newId = generateId(type);
+    if (open) {
       setFormData({
-        id: newId,
-        type: type === "vehicle" ? "Vehicle" : "Order",
+        id: generateVehicleId(),
+        status: "idle",
+        load: 0,
         latitude: "",
         longitude: "",
         selectedOrderId: "",
       });
     }
-  }, [open, type]);
+  }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!type) return;
 
     const lat = parseFloat(formData.latitude);
     const lng = parseFloat(formData.longitude);
@@ -75,23 +64,19 @@ export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, or
       return;
     }
 
-    if (type === "vehicle") {
-      onSubmitVehicle({
-        id: formData.id,
-        status: "idle",
-        orders: 0,
-        load: "0%",
-        startLocation: [lng, lat],
-        orderId: formData.selectedOrderId || undefined,
-      });
-    } else {
-      onSubmitOrder({
-        id: formData.id,
-        priority: "low",
-        weight: "0 kg",
-        location: [lng, lat],
-      });
+    if (!formData.load) {
+      alert("Load is required");
+      return;
     }
+
+    onSubmitVehicle({
+      id: formData.id,
+      status: formData.status,
+      orders: 0,
+      load: formData.load,
+      startLocation: [lng, lat],
+      orderId: formData.selectedOrderId || undefined,
+    });
 
     onOpenChange(false);
   };
@@ -103,7 +88,7 @@ export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, or
         <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 rounded-lg">
           <div className="flex items-center justify-between">
             <Dialog.Title className="text-lg font-semibold text-zinc-900 dark:text-white">
-              Add {type === "vehicle" ? "Vehicle" : "Order"}
+              Add Vehicle
             </Dialog.Title>
             <Dialog.Close asChild>
               <button className="rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 dark:ring-offset-zinc-950 dark:text-zinc-400">
@@ -127,43 +112,63 @@ export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, or
               />
             </div>
 
-            {/* Type Field - Read Only */}
+            {/* Status Field */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Type
+                Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    status: e.target.value as "active" | "pending" | "idle",
+                  })
+                }
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
+              >
+                <option value="idle">Idle</option>
+                <option value="active">Active</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
+
+            {/* Load Field */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Load
               </label>
               <input
-                type="text"
-                value={formData.type}
-                readOnly
-                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white cursor-not-allowed opacity-75"
+                type="number"
+                placeholder="e.g., 500"
+                value={formData.load}
+                onChange={(e) => setFormData({ ...formData, load: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
               />
             </div>
 
-            {/* Order Selection - Only for Vehicles */}
-            {type === "vehicle" && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Assign Order (Optional)
-                </label>
-                <select
-                  value={formData.selectedOrderId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, selectedOrderId: e.target.value })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
-                >
-                  <option value="">None</option>
-                  {orders.map((order) => (
-                    <option key={order.id} value={order.id}>
-                      {order.id} - {order.priority}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {/* Assign Order - Optional */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Assign Order (Optional)
+              </label>
+              <select
+                value={formData.selectedOrderId}
+                onChange={(e) =>
+                  setFormData({ ...formData, selectedOrderId: e.target.value })
+                }
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
+              >
+                <option value="">None</option>
+                {orders.map((order) => (
+                  <option key={order.id} value={order.id}>
+                    {order.id} - {order.priority}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            {/* Latitude Field - Editable */}
+            {/* Latitude Field */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Latitude
@@ -171,7 +176,7 @@ export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, or
               <input
                 type="number"
                 step="0.000001"
-                placeholder="e.g., 40.7128"
+                placeholder="e.g., 51.5074"
                 value={formData.latitude}
                 onChange={(e) =>
                   setFormData({ ...formData, latitude: e.target.value })
@@ -180,7 +185,7 @@ export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, or
               />
             </div>
 
-            {/* Longitude Field - Editable */}
+            {/* Longitude Field */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Longitude
@@ -188,7 +193,7 @@ export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, or
               <input
                 type="number"
                 step="0.000001"
-                placeholder="e.g., -74.0060"
+                placeholder="e.g., -0.1278"
                 value={formData.longitude}
                 onChange={(e) =>
                   setFormData({ ...formData, longitude: e.target.value })
@@ -211,7 +216,7 @@ export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, or
                 type="submit"
                 className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
               >
-                Add {type === "vehicle" ? "Vehicle" : "Order"}
+                Add Vehicle
               </button>
             </div>
           </form>
@@ -221,5 +226,4 @@ export const AddModal: React.FC<AddModalProps> = ({ open, onOpenChange, type, or
   );
 };
 
-export default AddModal;
-
+export default AddVehicleModal;
