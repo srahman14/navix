@@ -3,25 +3,17 @@
 import React from "react";
 import { CarFront, Plus } from "lucide-react";
 import { Button } from "./ui/button";
+import { useNavigationStore } from "@/store/navigation-store";
+import type { Vehicle } from "@/types";
 
-interface Vehicle {
-  id: string;
-  status: "active" | "idle";
-  orders: number;
-  load: string;
-}
+export const VehiclesSection: React.FC = () => {
+  const vehicles = useNavigationStore((state) => state.vehicles);
+  const setSelectedVehicle = useNavigationStore(
+    (state) => state.setSelectedVehicle
+  );
+  const deleteVehicle = useNavigationStore((state) => state.deleteVehicle);
+  const openModal = useNavigationStore((state) => state.openModal);
 
-interface VehiclesSectionProps {
-  vehicles: Vehicle[];
-  onAddVehicle: () => void;
-  onDeleteVehicle: (vehicleId: string) => void;
-}
-
-export const VehiclesSection: React.FC<VehiclesSectionProps> = ({
-  vehicles,
-  onAddVehicle,
-  onDeleteVehicle,
-}) => {
   return (
     <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
       <nav className="flex items-center justify-between mb-3">
@@ -29,7 +21,7 @@ export const VehiclesSection: React.FC<VehiclesSectionProps> = ({
           Active Vehicles
         </h2>
 
-        <Button variant={"ghost"} onClick={onAddVehicle}>
+        <Button variant={"ghost"} onClick={() => openModal("vehicle")}>
           <Plus />
           <p>Add Vehicle</p>
         </Button>
@@ -52,7 +44,8 @@ export const VehiclesSection: React.FC<VehiclesSectionProps> = ({
           {vehicles.map((vehicle) => (
             <div
               key={vehicle.id}
-              className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+              className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+              onClick={() => setSelectedVehicle(vehicle)}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-zinc-900 dark:text-white text-sm">
@@ -69,7 +62,10 @@ export const VehiclesSection: React.FC<VehiclesSectionProps> = ({
                     {vehicle.status}
                   </span>
                   <button
-                    onClick={() => onDeleteVehicle(vehicle.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteVehicle(vehicle.id);
+                    }}
                     className="text-zinc-500 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400 transition-colors"
                     title="Delete vehicle"
                   >

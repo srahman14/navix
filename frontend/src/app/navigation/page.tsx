@@ -2,32 +2,18 @@
 
 import MapComponent from "@/components/map";
 import NavigationSidebar from "@/components/navigation-sidebar";
-import React, { useState } from "react";
-
-type Vehicle = {
-  id: string;
-  status: "active" | "idle";
-  orders: number;
-  load: string;
-  startLocation: [number, number]; // [lng, lat]
-  orderId?: string; // Optional order association
-};
-
-type Order = {
-  id: string;
-  priority: "high" | "medium" | "low";
-  weight: string;
-  location: [number, number]; // [lng, lat]
-};
+import { useNavigationStore } from "@/store/navigation-store";
+import React from "react";
 
 const NavigationPage = () => {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const vehicles = useNavigationStore((state) => state.vehicles);
+  const orders = useNavigationStore((state) => state.orders);
+
   return (
     <main className="flex flex-col flex-1 items-center justify-center bg-zinc-50 dark:bg-black font-mono">
       <div className="h-screen w-full flex flex-col md:flex-row">
         {/* Left Navigation Sidebar */}
-        <NavigationSidebar vehicles={vehicles} orders={orders} setVehicles={setVehicles} setOrders={setOrders} />
+        <NavigationSidebar />
 
         {/* Right Map Area */}
         <div className="flex-1 bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center">

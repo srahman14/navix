@@ -3,6 +3,7 @@
 import React from "react";
 import { Logs, Plus } from "lucide-react";
 import { Button } from "./ui/button";
+import { useNavigationStore } from "@/store/navigation-store";
 
 interface Order {
   id: string;
@@ -10,17 +11,14 @@ interface Order {
   weight: string;
 }
 
-interface OrdersSectionProps {
-  orders: Order[];
-  onAddOrder: () => void;
-  onDeleteOrder: (orderId: string) => void;
-}
+export const OrdersSection: React.FC = () => {
+  const orders = useNavigationStore((state) => state.orders);
+  const setSelectedOrder = useNavigationStore(
+    (state) => state.setSelectedOrder
+  );
+  const deleteOrder = useNavigationStore((state) => state.deleteOrder);
+  const openModal = useNavigationStore((state) => state.openModal);
 
-export const OrdersSection: React.FC<OrdersSectionProps> = ({
-  orders,
-  onAddOrder,
-  onDeleteOrder,
-}) => {
   return (
     <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
       <nav className="flex items-center justify-between mb-3">
@@ -28,7 +26,7 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
           Pending Orders
         </h2>
 
-        <Button variant={"ghost"} onClick={onAddOrder}>
+        <Button variant={"ghost"} onClick={() => openModal("order")}>
           <Plus />
           <p>Add Order</p>
         </Button>
@@ -51,7 +49,8 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
           {orders.map((order) => (
             <div
               key={order.id}
-              className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+              className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+              onClick={() => setSelectedOrder(order)}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-zinc-900 dark:text-white text-sm">
@@ -70,7 +69,10 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
                     {order.priority}
                   </span>
                   <button
-                    onClick={() => onDeleteOrder(order.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteOrder(order.id);
+                    }}
                     className="text-zinc-500 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400 transition-colors"
                     title="Delete order"
                   >

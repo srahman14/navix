@@ -6,22 +6,8 @@ import type { FeatureCollection, Point, LineString } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useTheme } from "next-themes";
 import { getRoute } from "@/lib/api";
-
-interface Vehicle {
-  id: string;
-  status: "active" | "idle";
-  orders: number;
-  load: string;
-  startLocation: [number, number];
-  orderId?: string;
-}
-
-interface Order {
-  id: string;
-  priority: "high" | "medium" | "low";
-  weight: string;
-  location: [number, number];
-}
+import type { Vehicle, Order } from "@/types";
+import { useNavigationStore } from "@/store/navigation-store";
 
 interface MapComponentProps {
   vehicles: Vehicle[];
@@ -36,27 +22,42 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
   });
   const [routeData, setRouteData] =
     useState<FeatureCollection<LineString> | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { resolvedTheme } = useTheme();
 
+  const {
+    selectedVehicle,
+    getOrderById,
+    setRoutes,
+    setLoadingRoute,
+    setRouteError,
+    isLoadingRoute,
+  } = useNavigationStore();
+
   // Fetch route from OpenRouteService
   useEffect(() => {
+    if (!selectedVehicle) return;
+
+    const order = getOrderById(selectedVehicle.orderId);
+    if (!order) return;
+
     const fetchRoute = async () => {
       try {
-        setLoading(true);
-        setError(null);
+        setLoadingRoute(true);
+        setRouteError(null);
 
         // Test coordinates - realistic London street locations
-        const startCoords = [-0.1606, 51.4769]; // [lon, lat] Elephant & Castle
-        const endCoords = [-0.0759, 51.5173]; // Tower of London
-
         const coords = [
           [-0.1606, 51.4769],
           [-0.0759, 51.5173],
         ];
 
-        const routeData = await getRoute(coords);
+        // Render the route using the current selected vehicle and its related
+        // order
+        const routeData = await getRoute([
+          selectedVehicle.startLocation,
+          order.location,
+        ]);
 
         if (routeData?.routes && routeData.geometry) {
           console.log("ROUTE COORDINATES")
@@ -79,6 +80,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
             ],
           };
           setRouteData(routeFeature);
+          setLoadingRoute(false);
         }
       } catch (err) {
         const errorMessage =
@@ -105,12 +107,12 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
         };
         setRouteData(basicRoute);
       } finally {
-        setLoading(false);
+        setLoadingRoute(false);
       }
     };
 
     fetchRoute();
-  }, []);
+  }, [selectedVehicle]);
 
   // Filter vehicles that have orders attached
   const vehiclesWithOrders = vehicles.filter((v) => v.orderId);
@@ -154,8 +156,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
       : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
   return (
-    <div className="w-full h-screen relative">
-      {loading && (
+    <div className="w-full h-screen">
+      {isLoadingRoute && (
         <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 p-3 rounded shadow z-10">
           <p className="text-sm text-gray-700 dark:text-gray-300">
             Loading route...

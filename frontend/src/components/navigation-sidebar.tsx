@@ -1,65 +1,32 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { useSidebarStore } from "@/store/sidebar-store";
+import { useNavigationStore } from "@/store/navigation-store";
 import { SidebarHeader } from "./SidebarHeader";
 import { VehiclesSection } from "./VehiclesSection";
 import { OrdersSection } from "./OrdersSection";
 import { AddModal } from "./AddModal";
 
-interface Vehicle {
-  id: string;
-  status: "active" | "idle";
-  orders: number;
-  load: string;
-  startLocation: [number, number];
-  orderId?: string;
-}
-
-interface Order {
-  id: string;
-  priority: "high" | "medium" | "low";
-  weight: string;
-  location: [number, number];
-}
-
-interface NavigationSidebarProps {
-  vehicles: Vehicle[];
-  orders: Order[];
-  setVehicles: React.Dispatch<React.SetStateAction<Vehicle[]>>;
-  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
-}
-
-const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
-  vehicles,
-  orders,
-  setVehicles,
-  setOrders,
-}) => {
+const NavigationSidebar: React.FC = () => {
   const { isOpen, toggleSidebar } = useSidebarStore();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<"vehicle" | "order" | null>(null);
+  const isModalOpen = useNavigationStore((state) => state.isModalOpen);
+  const modalType = useNavigationStore((state) => state.modalType);
+  const closeModal = useNavigationStore((state) => state.closeModal);
+  const vehicles = useNavigationStore((state) => state.vehicles);
+  const orders = useNavigationStore((state) => state.orders);
+  const addVehicle = useNavigationStore((state) => state.addVehicle);
+  const addOrder = useNavigationStore((state) => state.addOrder);
 
-  const handleOpenModal = (type: "vehicle" | "order") => {
-    setModalType(type);
-    setModalOpen(true);
+  const handleAddVehicle = (vehicle: any) => {
+    addVehicle(vehicle);
+    closeModal();
   };
 
-  const handleAddVehicle = (vehicle: Vehicle) => {
-    setVehicles((prev) => [...prev, vehicle]);
-  };
-
-  const handleAddOrder = (order: Order) => {
-    setOrders((prev) => [...prev, order]);
-  };
-
-  const handleDeleteVehicle = (vehicleId: string) => {
-    setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
-  };
-
-  const handleDeleteOrder = (orderId: string) => {
-    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+  const handleAddOrder = (order: any) => {
+    addOrder(order);
+    closeModal();
   };
 
   return (
@@ -80,18 +47,10 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
         >
           <div className="overflow-y-auto h-full">
             {/* Active Vehicles Section */}
-            <VehiclesSection
-              vehicles={vehicles}
-              onAddVehicle={() => handleOpenModal("vehicle")}
-              onDeleteVehicle={handleDeleteVehicle}
-            />
+            <VehiclesSection />
 
             {/* Pending Orders Section */}
-            <OrdersSection
-              orders={orders}
-              onAddOrder={() => handleOpenModal("order")}
-              onDeleteOrder={handleDeleteOrder}
-            />
+            <OrdersSection />
 
             {/* Action Buttons Footer */}
             <div className="p-4 space-y-2 border-t border-zinc-200 dark:border-zinc-800">
@@ -111,8 +70,10 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
 
       {/* Add Modal */}
       <AddModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
+        open={isModalOpen}
+        onOpenChange={(open) => {
+          if (!open) closeModal();
+        }}
         type={modalType}
         orders={orders}
         onSubmitVehicle={handleAddVehicle}
