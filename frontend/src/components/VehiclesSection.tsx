@@ -47,7 +47,7 @@ export const VehiclesSection: React.FC = () => {
               className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
               onClick={() => setSelectedVehicle(vehicle)}
             >
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between">
                 <span className="font-semibold text-zinc-900 dark:text-white text-sm">
                   {vehicle.id}
                 </span>
@@ -73,9 +73,10 @@ export const VehiclesSection: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className="flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400 mb-2">
+              <div className="flex flex-col items-start justify-start text-xs text-zinc-600 dark:text-zinc-400 mb-3 mt-2">
+                <span>Related order/s: {vehicle.orderId ? vehicle.orderId : "No Order"}</span>
                 <span>Orders: {vehicle.orders}</span>
-                <span>Load: {vehicle.load}</span>
+                <span>Load: {vehicle.load} kg / {Math.floor(vehicle.load * 2.20462)} lbs</span>
               </div>
               <div className="w-full h-2 bg-zinc-300 dark:bg-zinc-700 rounded-full overflow-hidden">
                 <div

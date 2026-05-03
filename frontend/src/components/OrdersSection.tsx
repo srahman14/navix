@@ -81,7 +81,7 @@ export const OrdersSection: React.FC = () => {
                 </div>
               </div>
               <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                Weight: {order.weight}
+                Weight: {order.weight} kg / {Math.floor(order.weight * 2.20462)} lbs
               </p>
             </div>
           ))}
