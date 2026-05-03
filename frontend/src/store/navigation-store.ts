@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Vehicle, Order} from "@/types";
+import type { Vehicle, Order } from "@/types";
 
 type RouteData = {
   geometry: {
@@ -11,11 +11,16 @@ type RouteData = {
   };
 };
 
+type RouteInfo = {
+  distance: number | null;
+  duration: number | null;
+};
+
 type NavigationStore = {
   // Core
   vehicles: Vehicle[];
   orders: Order[];
-
+  
   // Currently selected
   selectedVehicle: Vehicle | null;
   selectedOrder: Order | null;
@@ -27,6 +32,7 @@ type NavigationStore = {
   // Routing
   routes: RouteData[];
   selectedRouteIndex: number;
+  routeInfo: RouteInfo | null;
   // UI State
   isLoadingRoute: boolean;
   routeError: string | null;
@@ -40,7 +46,6 @@ type NavigationStore = {
   setOrders: (orders: Order[]) => void;
   addOrder: (order: Order) => void;
   deleteOrder: (id: string) => void;
-
   // Selection
   setSelectedVehicle: (vehicle: Vehicle | null) => void;
   setSelectedOrder: (order: Order | null) => void;
@@ -54,9 +59,12 @@ type NavigationStore = {
 
   setLoadingRoute: (loading: boolean) => void;
   setRouteError: (error: string | null) => void;
+  setRouteInfo: (info: RouteInfo | null) => void;
 
   // Helpers
   getOrderById: (orderId?: string) => Order | undefined;
+  getTotalVehicles: () => number;
+  getTotalOrders: () => number;
 };
 
 export const useNavigationStore = create<NavigationStore>((set, get) => ({
@@ -69,6 +77,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   modalType: null,
   routes: [],
   selectedRouteIndex: 0,
+  routeInfo: null,
   isLoadingRoute: false,
   routeError: null,
 
@@ -78,13 +87,13 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   addVehicle: (vehicle) =>
     set((state) => ({
       vehicles: [...state.vehicles, vehicle],
+      
     })),
 
   deleteVehicle: (id) =>
     set((state) => ({
       vehicles: state.vehicles.filter((v) => v.id !== id),
     })),
-
   // Order Actions
   setOrders: (orders) => set({ orders }),
 
@@ -131,8 +140,19 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
   setRouteError: (error) => set({ routeError: error }),
 
-  // Helper
+  setRouteInfo: (info) => set({ routeInfo: info }),
+
+  // Helpers
   getOrderById: (orderId) => {
     return get().orders.find((o) => o.id === orderId);
   },
+
+  getTotalVehicles: () => {
+    return get().vehicles.length;
+  },
+
+  getTotalOrders: () => {
+    return get().orders.length;
+  },
+
 }));
