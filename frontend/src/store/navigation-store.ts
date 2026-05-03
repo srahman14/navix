@@ -1,20 +1,5 @@
 import { create } from "zustand";
-
-type Vehicle = {
-  id: string;
-  status: "active" | "pending" | "idle";
-  orders: number;
-  load: string;
-  startLocation: [number, number];
-  orderId?: string;
-};
-
-type Order = {
-  id: string;
-  priority: "high" | "medium" | "low";
-  weight: string;
-  location: [number, number];
-};
+import type { Vehicle, Order} from "@/types";
 
 type RouteData = {
   geometry: {
@@ -33,6 +18,11 @@ type NavigationStore = {
 
   // Currently selected
   selectedVehicle: Vehicle | null;
+  selectedOrder: Order | null;
+
+  // Modal State
+  isModalOpen: boolean;
+  modalType: "vehicle" | "order" | null;
 
   // Routing
   routes: RouteData[];
@@ -51,7 +41,13 @@ type NavigationStore = {
   addOrder: (order: Order) => void;
   deleteOrder: (id: string) => void;
 
-  setSelectedVehicle: (vehicle: Vehicle) => void;
+  // Selection
+  setSelectedVehicle: (vehicle: Vehicle | null) => void;
+  setSelectedOrder: (order: Order | null) => void;
+
+  // Modal
+  openModal: (type: "vehicle" | "order") => void;
+  closeModal: () => void;
 
   setRoutes: (routes: RouteData[]) => void;
   setSelectedRouteIndex: (index: number) => void;
@@ -68,6 +64,9 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   vehicles: [],
   orders: [],
   selectedVehicle: null,
+  selectedOrder: null,
+  isModalOpen: false,
+  modalType: null,
   routes: [],
   selectedRouteIndex: 0,
   isLoadingRoute: false,
@@ -101,6 +100,21 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
   // Selection
   setSelectedVehicle: (vehicle) => set({ selectedVehicle: vehicle }),
+
+  setSelectedOrder: (order) => set({ selectedOrder: order }),
+
+  // Modal
+  openModal: (type) =>
+    set({
+      isModalOpen: true,
+      modalType: type,
+    }),
+
+  closeModal: () =>
+    set({
+      isModalOpen: false,
+      modalType: null,
+    }),
 
   // Routes
   setRoutes: (routes) =>
