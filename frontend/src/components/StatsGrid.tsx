@@ -1,5 +1,6 @@
 "use client";
 
+import { useNavigationStore } from "@/store/navigation-store";
 import React from "react";
 
 interface StatsGridProps {
@@ -9,14 +10,16 @@ interface StatsGridProps {
   status?: string;
 }
 
-export const StatsGrid: React.FC<StatsGridProps> = ({
-  totalOrders = 24,
-  totalVehicles = 6,
-  totalCost = "$2,450",
-  status = "Optimal",
-}) => {
+export const StatsGrid: React.FC<StatsGridProps> = () => {
+  const totalOrders = useNavigationStore((state) => state.getTotalOrders());
+  const totalVehicles = useNavigationStore((state) => state.getTotalVehicles());
+  const totalCost = 0;
+  const status = "Optimal";
+
+
   return (
     <div className="p-4 space-y-3 border-b border-zinc-200 dark:border-zinc-800">
+      <h1 className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider">Statistics</h1>
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg">
           <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase">
