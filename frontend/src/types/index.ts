@@ -5,7 +5,7 @@ export interface Vehicle {
   id: string;
   status: "active" | "pending" | "idle";
   orders: number;
-  load: string;
+  load: number;
   startLocation: [number, number];
   orderId?: string;
 };
@@ -13,6 +13,6 @@ export interface Vehicle {
 export interface Order {
   id: string;
   priority: "high" | "medium" | "low";
-  weight: string;
+  weight: number;
   location: [number, number];
 };
