@@ -31,6 +31,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
     setRoutes,
     setLoadingRoute,
     setRouteError,
+    setRouteInfo,
     isLoadingRoute,
   } = useNavigationStore();
 
@@ -80,6 +81,10 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
             ],
           };
           setRouteData(routeFeature);
+          setRouteInfo({
+            distance: routeData.routes.summary?.distance || null,
+            duration: routeData.routes.summary?.duration || null,
+          });
           setLoadingRoute(false);
         }
       } catch (err) {
@@ -112,7 +117,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
     };
 
     fetchRoute();
-  }, [selectedVehicle]);
+  }, [selectedVehicle, setRouteInfo]);
 
   // Filter vehicles that have orders attached
   const vehiclesWithOrders = vehicles.filter((v) => v.orderId);
@@ -155,8 +160,12 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
       ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
       : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
+  const routeColour = resolvedTheme === "dark" ? "#fff" : "#2b2b2a"
+  const vehicleColour = resolvedTheme === "dark" ? "#" : "#"
+
   return (
     <div className="w-full h-screen">
+      {/* UPDATE THIS TOAST USING react-hot-toast */}
       {isLoadingRoute && (
         <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 p-3 rounded shadow z-10">
           <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -164,7 +173,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
           </p>
         </div>
       )}
-      {error && (
+      {error && !isLoadingRoute && (
         <div className="absolute top-4 left-4 bg-red-100 dark:bg-red-900 p-3 rounded shadow z-10">
           <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
         </div>
@@ -180,7 +189,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
           <Layer
             type="circle"
             paint={{
-              "circle-radius": 6,
+              "circle-radius": 8,
               "circle-color": "#3b82f6",
             }}
           />
@@ -191,7 +200,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
           <Layer
             type="circle"
             paint={{
-              "circle-radius": 6,
+              "circle-radius": 8,
               "circle-color": "#ef4444",
             }}
           />
@@ -203,7 +212,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
             <Layer
               type="line"
               paint={{
-                "line-color": "#10b981",
+                "line-color": routeColour,
                 "line-width": 3,
               }}
             />
