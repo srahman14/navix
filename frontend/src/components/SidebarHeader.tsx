@@ -6,6 +6,7 @@ import { Columns2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { ModeToggle } from "./theme-toggler";
 import { StatsGrid } from "./StatsGrid";
+import { RouteInfo } from "./RouteInfo";
 
 interface SidebarHeaderProps {
   isOpen: boolean;
@@ -75,6 +76,8 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
 
           {/* Stats Grid */}
           <StatsGrid />
+          {/* Current Route Information */}
+          <RouteInfo />
         </>
       )}
     </>

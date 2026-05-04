@@ -4,7 +4,7 @@ import React from "react";
 import { useNavigationStore } from "@/store/navigation-store";
 import { Loader2, Van } from "lucide-react";
 
-const RouteInfo = () => {
+export const RouteInfo: React.FC = () => {
   const routeInfo = useNavigationStore((state) => state.routeInfo);
   const loading = useNavigationStore((state) => state.isLoadingRoute);
   const errorMessage = useNavigationStore((state) => state.routeError)

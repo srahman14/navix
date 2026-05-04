@@ -40,8 +40,6 @@ const NavigationSidebar: React.FC = () => {
       >
         {/* Header with Search and Stats */}
         <SidebarHeader isOpen={isOpen} onToggleSidebar={toggleSidebar} />
-        {/* Current Route Information */}
-        <RouteInfo />
 
         {/* Scrollable Content Container */}
         <motion.div
