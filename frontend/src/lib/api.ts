@@ -17,9 +17,13 @@ export const getRoute = async (coordinates: any) => {
 
   const data = await response.json();
 
-  if (response.status != 200) {
-    console.error("Error: " + data.status + ", " + data.statusText)
+  if (!response.ok) {
+    console.error("API Error: " + data.message)
     throw new Error(data.message || "Failed to fetch route");
+  }
+
+  if (!data.content?.routes.length) {
+    throw new Error("No routes returned from backend");
   }
 
   return data.content;
