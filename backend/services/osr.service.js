@@ -10,6 +10,11 @@ export const fetchFromOSR = async (url, coordinates) => {
         },
         body: JSON.stringify({
             coordinates: coordinates,
+            alternative_routes: {
+                target_count: 3,
+                weight_factor: 1.4,
+                share_factor: 0.6,
+            }
         }),
     });
 
@@ -25,20 +30,27 @@ export const fetchFromOSR = async (url, coordinates) => {
         throw new Error("No route found in OSR response");
     }
 
+    const routes = data.routes.map((route) => {
+        const decoded = convertPolylineToCoordinates(route.geometry);
+
+        return {
+            summary: route.summary,
+            segments: route.segments,
+            bbox: route.bbox,
+            way_points: route.way_points,
+            geometry: {
+                encoded: route.geometry,
+                decoded,
+            },
+        };
+    })
+
     const decodedCoordinates = convertPolylineToCoordinates(route.geometry);
 
     // Returning structured response
     return {
         bbox: data.bbox,
         metadata: data.metadata,
-        routes: {
-            summary: route.summary,
-            segments: route.segments,
-            bbox: route.bbox,
-            way_points: route.way_points,
-        },
-        geometry: {
-            decoded: decodedCoordinates
-        }
+        routes
     }; 
 }
