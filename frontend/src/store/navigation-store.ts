@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Vehicle, Order } from "@/types";
+import toast from "react-hot-toast";
 
 type RouteData = {
   geometry: {
@@ -84,11 +85,17 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   // Vehicle Actions
   setVehicles: (vehicles) => set({ vehicles }),
 
-  addVehicle: (vehicle) =>
-    set((state) => ({
-      vehicles: [...state.vehicles, vehicle],
-      
-    })),
+  addVehicle: (vehicle) => {
+    try {
+      set((state) => ({
+        vehicles: [...state.vehicles, vehicle],
+        
+      }))
+      toast.success("Added vehicle...");
+    } catch (err) {
+      toast.error("Failed to add vehicle. Try again.");
+    }
+    },
 
   deleteVehicle: (id) =>
     set((state) => ({
