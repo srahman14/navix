@@ -8,6 +8,7 @@ import { useTheme } from "next-themes";
 import { getRoute } from "@/lib/api";
 import type { Vehicle, Order } from "@/types";
 import { useNavigationStore } from "@/store/navigation-store";
+import { toast } from "react-hot-toast";
 
 interface MapComponentProps {
   vehicles: Vehicle[];
@@ -60,9 +61,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
           order.location,
         ]);
 
-        if (routeData?.routes && routeData.geometry) {
-          console.log("ROUTE COORDINATES")
-          const routeCoordinates = routeData.geometry.decoded;
+        console.log({routeData})
+        if (routeData?.routes && routeData.routes.length > 0) {
+          // Use the first route from the alternatives
+          const firstRoute = routeData.routes[0];
+          const routeCoordinates = firstRoute.geometry.decoded;
 
           const routeFeature: FeatureCollection<LineString> = {
             type: "FeatureCollection",
@@ -74,16 +77,16 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
                   coordinates: routeCoordinates,
                 },
                 properties: {
-                  distance: routeData.routes.summary?.distance,
-                  duration: routeData.routes.summary?.duration,
+                  distance: firstRoute.summary?.distance,
+                  duration: firstRoute.summary?.duration,
                 },
               },
             ],
           };
           setRouteData(routeFeature);
           setRouteInfo({
-            distance: routeData.routes.summary?.distance || null,
-            duration: routeData.routes.summary?.duration || null,
+            distance: firstRoute.summary?.distance || null,
+            duration: firstRoute.summary?.duration || null,
           });
           setLoadingRoute(false);
         }
@@ -168,6 +171,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
       {/* UPDATE THIS TOAST USING react-hot-toast */}
       {isLoadingRoute && (
         <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 p-3 rounded shadow z-10">
+          toast.loading("Loading route..."); 
+
           <p className="text-sm text-gray-700 dark:text-gray-300">
             Loading route...
           </p>
