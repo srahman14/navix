@@ -16,3 +16,8 @@ export interface Order {
   weight: number;
   location: [number, number];
 };
+
+export interface RouteInfo {
+  distance: number | null;
+  duration: number | null;
+};
