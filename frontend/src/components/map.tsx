@@ -6,7 +6,7 @@ import type { FeatureCollection, Point, LineString } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useTheme } from "next-themes";
 import { getRoute } from "@/lib/api";
-import type { Vehicle, Order } from "@/types";
+import type { Vehicle, Order, RouteInfo } from "@/types";
 import { useNavigationStore } from "@/store/navigation-store";
 import { toast } from "react-hot-toast";
 
@@ -63,7 +63,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
 
         console.log({routeData})
         if (routeData?.routes && routeData.routes.length > 0) {
-          // Use the first route from the alternatives
+          // Use the first route from the alternatives for visualization
           const firstRoute = routeData.routes[0];
           const routeCoordinates = firstRoute.geometry.decoded;
 
@@ -84,10 +84,13 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
             ],
           };
           setRouteData(routeFeature);
-          setRouteInfo({
-            distance: firstRoute.summary?.distance || null,
-            duration: firstRoute.summary?.duration || null,
-          });
+          
+          // Extract route infos from all alternatives
+          const routeInfos = routeData.routes.map((route: any) => ({
+            distance: route.summary?.distance || null,
+            duration: route.summary?.duration || null,
+          }));
+          setRouteInfo(routeInfos);
           setLoadingRoute(false);
         }
       } catch (err) {

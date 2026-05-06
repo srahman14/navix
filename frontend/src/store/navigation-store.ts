@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Vehicle, Order } from "@/types";
+import type { Vehicle, Order, RouteInfo } from "@/types";
 import toast from "react-hot-toast";
 
 type RouteData = {
@@ -10,11 +10,6 @@ type RouteData = {
     distance: number;
     duration: number;
   };
-};
-
-type RouteInfo = {
-  distance: number | null;
-  duration: number | null;
 };
 
 type NavigationStore = {
@@ -33,7 +28,7 @@ type NavigationStore = {
   // Routing
   routes: RouteData[];
   selectedRouteIndex: number;
-  routeInfo: RouteInfo | null;
+  routeInfo: RouteInfo[] | null;
   // UI State
   isLoadingRoute: boolean;
   routeError: string | null;
@@ -60,7 +55,7 @@ type NavigationStore = {
 
   setLoadingRoute: (loading: boolean) => void;
   setRouteError: (error: string | null) => void;
-  setRouteInfo: (info: RouteInfo | null) => void;
+  setRouteInfo: (info: RouteInfo[] | null) => void;
 
   // Helpers
   getOrderById: (orderId?: string) => Order | undefined;
