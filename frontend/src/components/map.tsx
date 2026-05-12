@@ -34,34 +34,65 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
     setRouteError,
     setRouteInfo,
     isLoadingRoute,
+    getCachedRoute,
   } = useNavigationStore();
 
-  // Fetch route from OpenRouteService
+  // Fetch route from cache or API
   useEffect(() => {
     if (!selectedVehicle) return;
 
     const order = getOrderById(selectedVehicle.orderId);
     if (!order) return;
 
-    const fetchRoute = async () => {
+    const handleRoute = async () => {
       try {
         setLoadingRoute(true);
         setRouteError(null);
 
-        // Test coordinates - realistic London street locations
-        const coords = [
-          [-0.1606, 51.4769],
-          [-0.0759, 51.5173],
-        ];
+        // First, try to get cached route
+        const cachedRoutes = getCachedRoute(selectedVehicle.id);
 
-        // Render the route using the current selected vehicle and its related
-        // order
+        if (cachedRoutes && cachedRoutes.length > 0) {
+          // Use cached routes
+          toast.success("Fetched from cache");
+          const firstRoute = cachedRoutes[0];
+          const routeCoordinates = firstRoute.geometry.decoded;
+
+          const routeFeature: FeatureCollection<LineString> = {
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature",
+                geometry: {
+                  type: "LineString",
+                  coordinates: routeCoordinates,
+                },
+                properties: {
+                  distance: firstRoute.summary?.distance,
+                  duration: firstRoute.summary?.duration,
+                },
+              },
+            ],
+          };
+          setRouteData(routeFeature);
+
+          // Extract route infos from all cached alternatives
+          const routeInfos = cachedRoutes.map((route: any) => ({
+            distance: route.summary?.distance || null,
+            duration: route.summary?.duration || null,
+          }));
+          setRouteInfo(routeInfos);
+          setLoadingRoute(false);
+          return;
+        }
+
+        // If not cached, fetch from API
         const routeData = await getRoute([
           selectedVehicle.startLocation,
           order.location,
         ]);
 
-        console.log({routeData})
+        console.log({ routeData });
         if (routeData?.routes && routeData.routes.length > 0) {
           // Use the first route from the alternatives for visualization
           const firstRoute = routeData.routes[0];
@@ -84,7 +115,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
             ],
           };
           setRouteData(routeFeature);
-          
+
           // Extract route infos from all alternatives
           const routeInfos = routeData.routes.map((route: any) => ({
             distance: route.summary?.distance || null,
@@ -122,8 +153,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
       }
     };
 
-    fetchRoute();
-  }, [selectedVehicle, setRouteInfo]);
+    handleRoute();
+  }, [selectedVehicle, setRouteInfo, getOrderById, getCachedRoute]);
 
   // Filter vehicles that have orders attached
   const vehiclesWithOrders = vehicles.filter((v) => v.orderId);
