@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import type { Vehicle, Order } from "@/types";
+import { useNavigationStore } from "@/store/navigation-store";
 
 interface AddVehicleModalProps {
   open: boolean;
@@ -69,14 +70,25 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
       return;
     }
 
-    onSubmitVehicle({
+    const newVehicle: Vehicle = {
       id: formData.id,
       status: formData.status,
       orders: 0,
       load: formData.load,
       startLocation: [lng, lat],
       orderId: formData.selectedOrderId || undefined,
-    });
+    };
+
+    onSubmitVehicle(newVehicle);
+
+    // Pre-fetch and cache route if vehicle has a valid order
+    if (formData.selectedOrderId) {
+      const selectedOrder = orders.find((o) => o.id === formData.selectedOrderId);
+      if (selectedOrder) {
+        const { fetchAndCacheRoute } = useNavigationStore.getState();
+        fetchAndCacheRoute(newVehicle.id, newVehicle, selectedOrder);
+      }
+    }
 
     onOpenChange(false);
   };
