@@ -17,9 +17,9 @@ export const VehiclesSection: React.FC = () => {
   return (
     <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
       <nav className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+        <h1 className="text-md font-bold text-zinc-900 dark:text-white uppercase tracking-tight">
           Active Vehicles
-        </h2>
+        </h1>
 
         <Button variant={"ghost"} onClick={() => openModal("vehicle")}>
           <Plus />

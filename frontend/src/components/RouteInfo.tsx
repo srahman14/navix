@@ -22,11 +22,11 @@ export const RouteInfo: React.FC = () => {
 
   return (
     <div className="p-4 space-y-3 border-b border-zinc-200 dark:border-zinc-800">
-      <div className="flex justify-between items-center m-2">
-        <h1 className="text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+      <div className="flex justify-between items-center ">
+        <h1 className="text-md font-bold text-zinc-900 dark:text-white uppercase tracking-tight">
           Route Information
         </h1>
-        {loading ? <Loader2 className="animate-spin"/> : <Van className="animate-bounce" />}
+        {loading ? <Loader2 className="animate-spin"/> : <Van className="animate-pulse" />}
       </div>
       {routeInfo && Array.isArray(routeInfo) && routeInfo.length > 0 ? (
         <div className="space-y-2">

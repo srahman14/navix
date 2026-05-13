@@ -28,11 +28,11 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
             animate={{ opacity: isOpen ? 1 : 0 }}
             transition={{ duration: 0.2, delay: isOpen ? 0.1 : 0 }}
           >
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-              Navix
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tighter">
+              navix
             </h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              Route Optimization
+              route optimization
             </p>
           </motion.div>
 
