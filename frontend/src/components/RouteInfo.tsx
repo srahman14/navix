@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
 import { useNavigationStore } from "@/store/navigation-store";
-import { Loader2, Van } from "lucide-react";
+import { ClockFading, Loader2, Route, Van } from "lucide-react";
+import React from "react";
 
 export const RouteInfo: React.FC = () => {
   const routeInfo = useNavigationStore((state) => state.routeInfo);
@@ -32,9 +32,12 @@ export const RouteInfo: React.FC = () => {
         <div className="space-y-2">
           {routeInfo.map((route, index) => (
             <div key={index} className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg">
-              <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase mb-2">
+            <span className="flex items-center justify-between">
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 uppercase">
                 Route Option {index + 1}
               </p>
+              <Route size={18}/>
+            </span>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <p className="text-xs text-zinc-600 dark:text-zinc-400">Distance</p>
@@ -55,15 +58,21 @@ export const RouteInfo: React.FC = () => {
       ) : (
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg">
-            <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase">
-              Route Distance
-            </p>
+            <span className="flex items-center justify-between">
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 uppercase">
+                Route Distance
+              </p>
+              <Route size={18}/>
+            </span>
             <p className="text-xl font-bold text-zinc-900 dark:text-white mt-1">-</p>
           </div>
           <div className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg">
-            <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase">
-              Route Duration
-            </p>
+            <span className="flex items-center justify-between">
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 uppercase">
+                Route Duration
+              </p>
+              <ClockFading size={18}/>
+            </span>
             <p className="text-xl font-bold text-zinc-900 dark:text-white mt-1">-</p>
           </div>
         </div>
