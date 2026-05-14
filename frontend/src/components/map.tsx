@@ -9,6 +9,7 @@ import { getRoute } from "@/lib/api";
 import type { Vehicle, Order, RouteInfo } from "@/types";
 import { useNavigationStore } from "@/store/navigation-store";
 import { toast } from "react-hot-toast";
+import { renderToStaticMarkup } from "react-dom/server";
 
 interface MapComponentProps {
   vehicles: Vehicle[];
@@ -36,6 +37,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
     isLoadingRoute,
     getCachedRoute,
   } = useNavigationStore();
+
 
   // Fetch route from cache or API
   useEffect(() => {
@@ -199,19 +201,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
 
   const routeColour = resolvedTheme === "dark" ? "#fff" : "#2b2b2a"
   const vehicleColour = resolvedTheme === "dark" ? "#" : "#"
-
+  
   return (
     <div className="w-full h-screen">
-      {/* UPDATE THIS TOAST USING react-hot-toast */}
-      {isLoadingRoute && (
-        <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 p-3 rounded shadow z-10">
-          toast.loading("Loading route..."); 
-
-          <p className="text-sm text-gray-700 dark:text-gray-300">
-            Loading route...
-          </p>
-        </div>
-      )}
       {error && !isLoadingRoute && (
         <div className="absolute top-4 left-4 bg-red-100 dark:bg-red-900 p-3 rounded shadow z-10">
           <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
@@ -222,14 +214,29 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
         onMove={(e) => setViewState(e.viewState)}
         style={{ width: "100%", height: "100%" }}
         mapStyle={mapStyle}
+        onLoad={(event) => {
+          const map = event.target;
+
+          if (map.hasImage("truck")) return;
+          if (map.hasImage("box")) return;
+
+          map.loadImage("/frontal-truck.png").then((image) => {
+            map.addImage("truck", image.data);
+          });
+
+          map.loadImage("/box.png").then((image) => {
+            map.addImage("box", image.data);
+          });
+        }}
       >
         {/* Vehicles Source */}
         <Source id="vehicles" type="geojson" data={vehiclePoints}>
           <Layer
-            type="circle"
-            paint={{
-              "circle-radius": 8,
-              "circle-color": "#3b82f6",
+            type="symbol"
+            layout={{
+              "icon-image": "truck",
+              "icon-size": 0.05,
+              "icon-allow-overlap": true,
             }}
           />
         </Source>
@@ -237,10 +244,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
         {/* Orders Source */}
         <Source id="orders" type="geojson" data={orderPoints}>
           <Layer
-            type="circle"
-            paint={{
-              "circle-radius": 8,
-              "circle-color": "#ef4444",
+            type="symbol"
+            layout={{
+              "icon-image": "box",
+              "icon-size": 0.04,
+              "icon-allow-overlap": true,
             }}
           />
         </Source>
