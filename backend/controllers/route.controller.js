@@ -1,4 +1,5 @@
 import { fetchFromOSR } from "../services/osr.service.js";
+import { ENV_VARS } from "../config/envVars.js";
 
 export async function getRouteForCar(req, res) {
   const { coordinates } = req.body;
@@ -13,7 +14,7 @@ export async function getRouteForCar(req, res) {
 
   try {
     const data = await fetchFromOSR(
-      `https://api.openrouteservice.org/v2/directions/driving-car`,
+      ENV_VARS.OSR_API_URL_CAR,
       coordinates,
     );
 

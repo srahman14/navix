@@ -18,7 +18,7 @@ export const fetchFromOSR = async (url, coordinates) => {
         }),
     });
 
-    if (response.status !== 200) {
+    if (!response.ok) {
         throw new Error("Failed to fetch data from OSR " + response.statusText);
     }
 
@@ -44,9 +44,7 @@ export const fetchFromOSR = async (url, coordinates) => {
             },
         };
     })
-
-    const decodedCoordinates = convertPolylineToCoordinates(route.geometry);
-
+    
     // Returning structured response
     return {
         bbox: data.bbox,
