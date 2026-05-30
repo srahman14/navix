@@ -3,22 +3,12 @@
 import { useNavigationStore } from "@/store/navigation-store";
 import { ClockFading, Loader2, Route, Van } from "lucide-react";
 import React from "react";
+import { formatDistance, formatDuration } from "@/lib/format";
 
 export const RouteInfo: React.FC = () => {
   const routeInfo = useNavigationStore((state) => state.routeInfo);
   const loading = useNavigationStore((state) => state.isLoadingRoute);
   const errorMessage = useNavigationStore((state) => state.routeError)
-
-  const formatDistance = (distance: number | null) => {
-    if (distance === null) return "-";
-    return `${(distance / 1000).toFixed(2)} km`;
-  };
-
-  const formatDuration = (duration: number | null) => {
-    if (duration === null) return "-";
-    const minutes = Math.floor(duration / 60);
-    return `${minutes} min`;
-  };
 
   return (
     <div className="p-4 space-y-3 border-b border-zinc-200 dark:border-zinc-800">
