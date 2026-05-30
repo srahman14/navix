@@ -40,7 +40,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
   useEffect(() => {
     if (routeData && routeData.features.length > 0) {
       const coordinates = routeData.features[0].geometry.coordinates;
-      setRouteCoordinates(coordinates);
+      setRouteCoordinates(coordinates.map(coord => [coord[0], coord[1]] as [number, number]));
       setCurrentStep(0);
       setIsAnimating(true);
     } else {
