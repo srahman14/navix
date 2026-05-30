@@ -9,7 +9,7 @@ import { getRoute } from "@/lib/api";
 import type { Vehicle, Order, RouteInfo } from "@/types";
 import { useNavigationStore } from "@/store/navigation-store";
 import { toast } from "react-hot-toast";
-import { renderToStaticMarkup } from "react-dom/server";
+import { registerMapIcons, MAP_ICONS } from "@/lib/map-icons";
 
 interface MapComponentProps {
   vehicles: Vehicle[];
@@ -26,6 +26,28 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
     useState<FeatureCollection<LineString> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { resolvedTheme } = useTheme();
+
+  // Animation state
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    console.log(resolvedTheme)
+  }, [resolvedTheme])
+  
+  // Extract route coordinates from routeData
+  useEffect(() => {
+    if (routeData && routeData.features.length > 0) {
+      const coordinates = routeData.features[0].geometry.coordinates;
+      setRouteCoordinates(coordinates);
+      setCurrentStep(0);
+      setIsAnimating(true);
+    } else {
+      setRouteCoordinates([]);
+      setIsAnimating(false);
+    }
+  }, [routeData]);
 
   const {
     selectedVehicle,
@@ -161,38 +183,87 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
   // Filter vehicles that have orders attached
   const vehiclesWithOrders = vehicles.filter((v) => v.orderId);
 
+  // Animation loop - moves route line from vehicle coordintes to order coordinates
+  useEffect(() => {
+    if (routeCoordinates.length === 0 || !isAnimating) {
+      return;
+    }
+
+    // Update position every 5ms
+    const animationInterval = setInterval(() => {
+      setCurrentStep((prevStep) => {
+        const nextStep = prevStep + 1;
+        // Stop animation when reaching the end
+        if (nextStep >= routeCoordinates.length) {
+          setIsAnimating(false);
+          return prevStep;
+        }
+        return nextStep;
+      });
+    }, 2.5); 
+
+    return () => clearInterval(animationInterval);
+  }, [routeCoordinates, isAnimating]);
+
   // Convert vehicles to GeoJSON points (all vehicles, not just those with orders)
-  const vehiclePoints: FeatureCollection<Point> = {
-    type: "FeatureCollection",
-    features: vehicles.map((vehicle) => ({
-      type: "Feature" as const,
-      geometry: {
-        type: "Point" as const,
-        coordinates: vehicle.startLocation,
-      },
-      properties: {
-        id: vehicle.id,
-        status: vehicle.status,
-        orderId: vehicle.orderId,
-      },
-    })),
-  };
+  const vehiclePoints = useMemo<FeatureCollection<Point>>(
+    () => ({
+      type: "FeatureCollection",
+      features: vehicles.map((vehicle) => ({
+        type: "Feature" as const,
+        geometry: {
+          type: "Point" as const,
+          coordinates: vehicle.startLocation,
+        },
+        properties: {
+          id: vehicle.id,
+          status: vehicle.status,
+          orderId: vehicle.orderId,
+        },
+      })),
+    }),
+    [vehicles]
+  );
 
   // Convert orders to GeoJSON points
-  const orderPoints: FeatureCollection<Point> = {
-    type: "FeatureCollection",
-    features: orders.map((order) => ({
-      type: "Feature" as const,
-      geometry: {
-        type: "Point" as const,
-        coordinates: order.location,
-      },
-      properties: {
-        id: order.id,
-        priority: order.priority,
-      },
-    })),
-  };
+  const orderPoints = useMemo<FeatureCollection<Point>>(
+    () => ({
+      type: "FeatureCollection",
+      features: orders.map((order) => ({
+        type: "Feature" as const,
+        geometry: {
+          type: "Point" as const,
+          coordinates: order.location,
+        },
+        properties: {
+          id: order.id,
+          priority: order.priority,
+        },
+      })),
+    }),
+    [orders]
+  );
+
+  // Create animated route that progressively draws from start to current step
+  const animatedRouteData = useMemo<FeatureCollection<LineString>>(
+    () => ({
+      type: "FeatureCollection",
+      features:
+        routeCoordinates.length > 0
+          ? [
+              {
+                type: "Feature" as const,
+                geometry: {
+                  type: "LineString" as const,
+                  coordinates: routeCoordinates.slice(0, currentStep + 1),
+                },
+                properties: {},
+              },
+            ]
+          : [],
+    }),
+    [routeCoordinates, currentStep]
+  ); 
 
   const mapStyle =
     resolvedTheme === "dark"
@@ -200,7 +271,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
       : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
   const routeColour = resolvedTheme === "dark" ? "#fff" : "#2b2b2a"
-  const vehicleColour = resolvedTheme === "dark" ? "#" : "#"
   
   return (
     <div className="w-full h-screen">
@@ -215,18 +285,10 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
         style={{ width: "100%", height: "100%" }}
         mapStyle={mapStyle}
         onLoad={(event) => {
-          const map = event.target;
-
-          if (map.hasImage("truck")) return;
-          if (map.hasImage("box")) return;
-
-          map.loadImage("/frontal-truck.png").then((image) => {
-            map.addImage("truck", image.data);
-          });
-
-          map.loadImage("/box.png").then((image) => {
-            map.addImage("box", image.data);
-          });
+          registerMapIcons(
+            event.target,
+            resolvedTheme || "light"
+          );
         }}
       >
         {/* Vehicles Source */}
@@ -234,7 +296,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
           <Layer
             type="symbol"
             layout={{
-              "icon-image": "truck",
+              "icon-image": MAP_ICONS.TRUCK,
               "icon-size": 0.05,
               "icon-allow-overlap": true,
             }}
@@ -246,16 +308,16 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
           <Layer
             type="symbol"
             layout={{
-              "icon-image": "box",
+              "icon-image": MAP_ICONS.ORDER,
               "icon-size": 0.04,
               "icon-allow-overlap": true,
             }}
           />
         </Source>
 
-        {/* OpenRouteService Route */}
-        {routeData && (
-          <Source id="route" type="geojson" data={routeData}>
+        {/* Animated Route - progressively drawn from vehicle to order */}
+        {routeCoordinates.length > 0 && (
+          <Source id="route" type="geojson" data={animatedRouteData}>
             <Layer
               type="line"
               paint={{
