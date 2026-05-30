@@ -14,7 +14,8 @@ export const fetchFromOSR = async (url, coordinates) => {
                 target_count: 3,
                 weight_factor: 1.4,
                 share_factor: 0.6,
-            }
+            },
+            elevation: true
         }),
     });
 
