@@ -1,12 +1,12 @@
 import { ENV_VARS } from "../config/envVars.js";
 import { convertPolylineToCoordinates } from "../utils/polyline.js";
 
-export const fetchFromOSR = async (url, coordinates) => {
+export const fetchFromORS = async (url, coordinates) => {
     const response = await fetch(url, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": ENV_VARS.OSR_API_KEY, 
+            "Authorization": ENV_VARS.ORS_API_KEY, 
         },
         body: JSON.stringify({
             coordinates: coordinates,
