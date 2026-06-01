@@ -1,7 +1,8 @@
 // Mock environment variables before importing service
 jest.mock("../config/envVars.js", () => ({
   ENV_VARS: {
-    OSR_API_URL_CAR: "https://api.openrouteservice.org/v2/directions/driving-car",
+    ORS_API_URL_CAR: "https://api.openrouteservice.org/v2/directions/driving-car",
+    ORS_API_KEY: "test-api-key",
   },
 }));
 
@@ -13,12 +14,12 @@ jest.mock("../utils/polyline.js", () => ({
   ]),
 }));
 
-import { fetchFromOSR } from "../services/osr.service";
+import { fetchFromORS } from "../services/ors.service";
 import { ENV_VARS } from "../config/envVars.js";
 
 global.fetch = jest.fn();
 
-describe("fetchFromOSR", () => {
+describe("fetchFromORS", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -29,7 +30,7 @@ describe("fetchFromOSR", () => {
       bbox: [0, 0, 1, 1],
 
       metadata: {
-        engine: {
+      engine: {
           version: "8.0",
         },
       },
@@ -63,8 +64,8 @@ describe("fetchFromOSR", () => {
       json: async () => mockApiResponse,
     });
 
-    const result = await fetchFromOSR(
-      ENV_VARS.OSR_API_URL_CAR,
+    const result = await fetchFromORS(
+      ENV_VARS.ORS_API_URL_CAR,
       [
         [51.5001, 0.1278],
         [51.5001, -0.07649],
@@ -75,6 +76,11 @@ describe("fetchFromOSR", () => {
       expect.any(String),
 
       expect.objectContaining({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "test-api-key",
+        },
         body: JSON.stringify({
           coordinates: [
             [51.5001, 0.1278],
@@ -86,6 +92,7 @@ describe("fetchFromOSR", () => {
             weight_factor: 1.4,
             share_factor: 0.6,
           },
+          elevation: false,
         }),
       }),
     );
@@ -108,8 +115,8 @@ describe("fetchFromOSR", () => {
     });
 
     await expect(
-      fetchFromOSR(
-        ENV_VARS.OSR_API_URL_CAR,
+      fetchFromORS(
+        ENV_VARS.ORS_API_URL_CAR,
         [
           [51.5001, 0.1278],
           [51.5001, -0.07649],
