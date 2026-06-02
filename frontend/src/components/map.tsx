@@ -111,10 +111,13 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
         }
 
         // If not cached, fetch from API
+        // Profile is set to 'driving-car' by default as of now
         const routeData = await getRoute([
           selectedVehicle.startLocation,
           order.location,
-        ]);
+        ],
+        "driving-car",
+      );
 
         console.log({ routeData });
         if (routeData?.routes && routeData.routes.length > 0) {
