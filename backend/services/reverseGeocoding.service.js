@@ -34,6 +34,9 @@ export async function reverseGeocode(lat, lng) {
       region,
       country,
       display_name: data.display_name,
+      road: address.road,
+      state: address.state,
+      postcode: address.postcode,
       coordinates: { lat, lng }
     };
   } catch (err) {
