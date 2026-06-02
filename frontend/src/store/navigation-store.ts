@@ -13,6 +13,20 @@ type RouteData = {
   };
 };
 
+type LocationData = {
+  locality: string;
+  region: string;
+  country: string;
+  display_name: string;
+  road: string,
+  state: string,
+  postcode: string,
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+};
+
 type NavigationStore = {
   // Core
   vehicles: Vehicle[];
@@ -24,7 +38,9 @@ type NavigationStore = {
 
   // Modal State
   isModalOpen: boolean;
-  modalType: "vehicle" | "order" | null;
+  modalType: "vehicle" | "order" | "active-vehicles" | "active-orders" | null;
+  editingVehicleId: string | null;
+  editingOrderId: string | null;
 
   // Routing
   routes: RouteData[];
@@ -32,6 +48,8 @@ type NavigationStore = {
   routeInfo: RouteInfo[] | null;
   // Route Cache - Pre-computed routes stored by vehicleId
   routeCache: { [vehicleId: string]: RouteData[] };
+  // Location Cache - Reverse geocoding results stored by location key
+  locationCache: { [key: string]: LocationData[] };
   // UI State
   isLoadingRoute: boolean;
   routeError: string | null;
@@ -41,16 +59,18 @@ type NavigationStore = {
   setVehicles: (vehicles: Vehicle[]) => void;
   addVehicle: (vehicle: Vehicle) => void;
   deleteVehicle: (id: string) => void;
+  updateVehicle: (id: string, vehicle: Vehicle) => void;
   // Orders
   setOrders: (orders: Order[]) => void;
   addOrder: (order: Order) => void;
   deleteOrder: (id: string) => void;
+  updateOrder: (id: string, order: Order) => void;
   // Selection
   setSelectedVehicle: (vehicle: Vehicle | null) => void;
   setSelectedOrder: (order: Order | null) => void;
 
   // Modal
-  openModal: (type: "vehicle" | "order") => void;
+  openModal: (type: "vehicle" | "order" | "active-vehicles" | "active-orders") => void;
   closeModal: () => void;
 
   setRoutes: (routes: RouteData[]) => void;
@@ -62,6 +82,7 @@ type NavigationStore = {
 
   // Helpers
   getOrderById: (orderId?: string) => Order | undefined;
+  getVehicleById: (vehicleId: string) => Vehicle | undefined;
   getTotalVehicles: () => number;
   getTotalOrders: () => number;
 
@@ -69,6 +90,11 @@ type NavigationStore = {
   fetchAndCacheRoute: (vehicleId: string, vehicle: Vehicle, order: Order) => Promise<void>;
   getCachedRoute: (vehicleId: string) => RouteData[] | null;
   clearRouteCache: (vehicleId: string) => void;
+
+  // Location caching
+  setCachedLocation: (key: string, locations: LocationData[]) => void;
+  getCachedLocation: (key: string) => LocationData[] | null;
+  clearLocationCache: (key?: string) => void;
 };
 
 export const useNavigationStore = create<NavigationStore>((set, get) => ({
@@ -79,10 +105,13 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   selectedOrder: null,
   isModalOpen: false,
   modalType: null,
+  editingVehicleId: null,
+  editingOrderId: null,
   routes: [],
   selectedRouteIndex: 0,
   routeInfo: null,
   routeCache: {},
+  locationCache: {},
   isLoadingRoute: false,
   routeError: null,
 
@@ -112,6 +141,15 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     });
     toast.success("Vehicle removed from cache");
   },
+
+  updateVehicle: (id, updatedVehicle) => {
+    set((state) => ({
+      vehicles: state.vehicles.map((v) => (v.id === id ? updatedVehicle : v)),
+      selectedVehicle: state.selectedVehicle?.id === id ? updatedVehicle : state.selectedVehicle,
+    }));
+    toast.success("Vehicle updated");
+  },
+
   // Order Actions
   setOrders: (orders) => set({ orders }),
 
@@ -123,6 +161,12 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   deleteOrder: (id) =>
     set((state) => ({
       orders: state.orders.filter((o) => o.id !== id),
+    })),
+
+  updateOrder: (id, updatedOrder) =>
+    set((state) => ({
+      orders: state.orders.map((o) => (o.id === id ? updatedOrder : o)),
+      selectedOrder: state.selectedOrder?.id === id ? updatedOrder : state.selectedOrder,
     })),
 
   // Selection
@@ -165,6 +209,10 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     return get().orders.find((o) => o.id === orderId);
   },
 
+  getVehicleById: (vehicleId) => {
+    return get().vehicles.find((v) => v.id === vehicleId);
+  },
+
   getTotalVehicles: () => {
     return get().vehicles.length;
   },
@@ -196,7 +244,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       toast.success("Route cached for vehicle");
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to fetch route";
+        error instanceof Error ? error.message : "Failed to fh route";
       set({
         routeError: errorMessage,
         isLoadingRoute: false,
@@ -227,4 +275,28 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     });
   },
 
+  // Location caching
+  setCachedLocation: (key, locations) => {
+    set((state) => ({
+      locationCache: {
+        ...state.locationCache,
+        [key]: locations,
+      },
+    }));
+  },
+
+  getCachedLocation: (key) => {
+    const state = get();
+    return state.locationCache[key] || null;
+  },
+
+  clearLocationCache: (key) => {
+    set((state) => {
+      if (key) {
+        const { [key]: _, ...remainingCache } = state.locationCache;
+        return { locationCache: remainingCache };
+      }
+      return { locationCache: {} };
+    });
+  },
 }));
