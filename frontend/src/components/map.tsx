@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useCallback, useMemo, useState, useEffect } from "react";
+import React, { useRef, useMemo, useState, useEffect } from "react";
 import Map, { Source, Layer } from "@vis.gl/react-maplibre";
+import type { MapRef } from "@vis.gl/react-maplibre";
 import type { FeatureCollection, Point, LineString } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useTheme } from "next-themes";
@@ -9,7 +10,7 @@ import { getRoute } from "@/lib/api";
 import type { Vehicle, Order, RouteInfo } from "@/types";
 import { useNavigationStore } from "@/store/navigation-store";
 import { toast } from "react-hot-toast";
-import { registerMapIcons, MAP_ICONS } from "@/lib/map-icons";
+import { registerMapIcons, MAP_ICONS, reloadMapIcons } from "@/lib/map-icons";
 
 interface MapComponentProps {
   vehicles: Vehicle[];
@@ -32,10 +33,21 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // mapRef
+  const mapRef = useRef<MapRef | null>(null);
+
   useEffect(() => {
     console.log(resolvedTheme)
   }, [resolvedTheme])
   
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+
+    if (!map || !resolvedTheme) return;
+
+    reloadMapIcons(map, resolvedTheme);
+  }, [resolvedTheme])
+
   // Extract route coordinates from routeData
   useEffect(() => {
     if (routeData && routeData.features.length > 0) {
@@ -119,7 +131,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
         "driving-car",
       );
 
-        console.log({ routeData });
         if (routeData?.routes && routeData.routes.length > 0) {
           // Use the first route from the alternatives for visualization
           const firstRoute = routeData.routes[0];
@@ -284,6 +295,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
       )}
       <Map
         {...viewState}
+        ref={mapRef}
         onMove={(e) => setViewState(e.viewState)}
         style={{ width: "100%", height: "100%" }}
         mapStyle={mapStyle}
@@ -300,8 +312,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
             type="symbol"
             layout={{
               "icon-image": MAP_ICONS.TRUCK,
-              "icon-size": 0.05,
+              "icon-size": 0.07,
               "icon-allow-overlap": true,
+              "symbol-z-order": "source"
             }}
           />
         </Source>
@@ -312,7 +325,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
             type="symbol"
             layout={{
               "icon-image": MAP_ICONS.ORDER,
-              "icon-size": 0.04,
+              "icon-size": 0.07,
               "icon-allow-overlap": true,
             }}
           />

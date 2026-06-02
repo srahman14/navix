@@ -5,6 +5,16 @@ export const MAP_ICONS = {
     TRUCK_SELECTED: "truck-selected",
     ORDER: "box",
 }
+const ICONS_CONFIG = [
+    {
+        key: MAP_ICONS.TRUCK,
+        file: "frontal-truck",
+    },
+    {
+        key: MAP_ICONS.ORDER,
+        file: "box",
+    },
+];
 
 export const getIconPath = (
     theme: string,
@@ -13,22 +23,12 @@ export const getIconPath = (
     return `/icons/${theme}/${icon}.png`;
 }
 
+
 export const registerMapIcons = async (
     map: MapLibreMap, 
     theme: string
 ) => {
-    const icons = [
-        {
-            key: MAP_ICONS.TRUCK,
-            file: "frontal-truck",
-        },
-        {
-            key: MAP_ICONS.ORDER,
-            file: "box",
-        },
-    ];
-
-    for (const icon of icons) {
+    for (const icon of ICONS_CONFIG) {
         if (map.hasImage(icon.key)) continue;
 
         const image = await map.loadImage(
@@ -39,3 +39,15 @@ export const registerMapIcons = async (
     }
 };
 
+export const reloadMapIcons = async (
+    map: MapLibreMap,
+    theme: string
+) => {
+    for (const icon of ICONS_CONFIG) {
+        if (map.hasImage(icon.key)) {
+            map.removeImage(icon.key);
+        }
+    }
+
+    await registerMapIcons(map, theme);
+}
