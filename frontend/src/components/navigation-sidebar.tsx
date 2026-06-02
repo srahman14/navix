@@ -9,7 +9,8 @@ import { VehiclesSection } from "./VehiclesSection";
 import { OrdersSection } from "./OrdersSection";
 import { AddVehicleModal } from "./AddVehicleModal";
 import { AddOrderModal } from "./AddOrderModal";
-import RouteInfo from "./RouteInfo";
+import ActiveVehiclesModal from "./ActiveVehiclesModal";
+import ActiveOrdersModal from "./ActiveOrdersModal";
 
 const NavigationSidebar: React.FC = () => {
   const { isOpen, toggleSidebar } = useSidebarStore();
@@ -92,6 +93,12 @@ const NavigationSidebar: React.FC = () => {
           onSubmitOrder={handleAddOrder}
         />
       )}
+
+      {/* Active Vehicles Modal */}
+      <ActiveVehiclesModal />
+
+      {/* Active Orders Modal */}
+      <ActiveOrdersModal />
     </>
   );
 };
