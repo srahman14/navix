@@ -48,9 +48,9 @@ const OrderCard: React.FC<OrderCardProps> = ({
       </button>
 
       {/* Order Icon and ID */}
-      <div className="flex items-start gap-3 mb-3 pr-6">
-        <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-          <Package size={24} className="text-blue-600 dark:text-blue-300" />
+      <div className="flex items-center gap-3 mb-3 pr-6">
+        <div className="p-2 bg-blue-100 dark:bg-zinc-900 rounded-lg">
+          <Package size={24} className="text-blue-600 dark:text-white" />
         </div>
         <div className="flex-1">
           <p className="font-semibold text-sm text-zinc-900 dark:text-white">

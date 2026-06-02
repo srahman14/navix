@@ -1,10 +1,22 @@
+"use client";
+
 import { ModeToggle } from "@/components/theme-toggler";
 import { Button } from "@/components/ui/button";
 import { MoveRight } from "lucide-react";
+import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
+  const { resolvedTheme } = useTheme();
+
+  if (!resolvedTheme) return null;
+
+  const path =
+    resolvedTheme === "dark"
+      ? "/icons/light/Github_Invertocat_White.svg"
+      : "/icons/dark/Github_Invertocat_Black.svg";
+
   return (
     <main className="flex flex-col flex-1 items-center justify-center bg-zinc-50 dark:bg-black font-mono">
       <div className="max-w-3xl container items-center justify-center">
@@ -20,8 +32,8 @@ export default function Home() {
             <Link href={"https://github.com/srahman14/navix"}>
               <span className="flex items-center justify-content-center space-x-2">
                 <Image
-                  className="bg-black rounded-2xl"
-                  src={"/Github_Invertocat_White.svg"}
+                  className="bg-black border-none rounded-2xl"
+                  src={'/icons/light/GitHub_Invertocat_White.svg'}
                   width={20}
                   height={20}
                   alt="github logo"
