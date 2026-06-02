@@ -1,73 +1,140 @@
 "use client";
 
 import { useNavigationStore } from "@/store/navigation-store";
-import { Circle, ChevronDown, ChevronUp, ClockFading, Loader2, Route, Van } from "lucide-react";
+import {
+  Circle,
+  ChevronDown,
+  ChevronUp,
+  ClockFading,
+  Loader2,
+  Route,
+  Van,
+  Copy,
+  CircleCheckBig,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { formatDistance, formatDuration } from "@/lib/format";
+import { copyRouteInfo, formatDistance, formatDuration } from "@/lib/format";
 import { getLocation } from "@/lib/api";
+import { Button } from "./ui/button";
 
 export const RouteInfo: React.FC = () => {
   const [isOpen, setIsOpen] = useState(true);
   const routeInfo = useNavigationStore((state) => state.routeInfo);
   const loading = useNavigationStore((state) => state.isLoadingRoute);
-  const errorMessage = useNavigationStore((state) => state.routeError)
+  const errorMessage = useNavigationStore((state) => state.routeError);
   const getOrderById = useNavigationStore((state) => state.getOrderById);
-  const getCachedLocation = useNavigationStore((state) => state.getCachedLocation);
-  const setCachedLocation = useNavigationStore((state) => state.setCachedLocation);
-  const selectedVehicle = useNavigationStore(
-    (state) => state.selectedVehicle
+  const getCachedLocation = useNavigationStore(
+    (state) => state.getCachedLocation,
   );
+  const setCachedLocation = useNavigationStore(
+    (state) => state.setCachedLocation,
+  );
+  const selectedVehicle = useNavigationStore((state) => state.selectedVehicle);
   const vehicleOrder = getOrderById(selectedVehicle?.orderId);
   const [startLocation, setStartLocation] = useState("");
   const [endLocation, setEndLocation] = useState("");
- 
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [isDisabled, setIsDisabled] = useState(false);
 
   useEffect(() => {
     if (!selectedVehicle?.startLocation || !vehicleOrder?.location) {
       setStartLocation("");
       setEndLocation("");
-      return; 
+      return;
     }
-    
+
     // Create cache key from vehicle ID and order ID
     const cacheKey = `${selectedVehicle.id}-${vehicleOrder.id}`;
-    
+
     // Check if location is already cached
     const cachedLocation = getCachedLocation(cacheKey);
     if (cachedLocation && cachedLocation.length >= 2) {
-      setStartLocation(cachedLocation[0].road + ", " + cachedLocation[0].state + ", " + cachedLocation[0].locality + ", " +  cachedLocation[0].postcode + ", " + cachedLocation[0].country);
-      setEndLocation(cachedLocation[1].road + ", " + cachedLocation[1].state + ", " + cachedLocation[1].locality + ", " +  cachedLocation[1].postcode + ", " + cachedLocation[1].country);
+      setStartLocation(
+        cachedLocation[0].road +
+          ", " +
+          cachedLocation[0].state +
+          ", " +
+          cachedLocation[0].locality +
+          ", " +
+          cachedLocation[0].postcode +
+          ", " +
+          cachedLocation[0].country,
+      );
+      setEndLocation(
+        cachedLocation[1].road +
+          ", " +
+          cachedLocation[1].state +
+          ", " +
+          cachedLocation[1].locality +
+          ", " +
+          cachedLocation[1].postcode +
+          ", " +
+          cachedLocation[1].country,
+      );
       return;
     }
-    
-    const handleFetchingLocation = async () => { 
+
+    const handleFetchingLocation = async () => {
       try {
-        const data = await getLocation(
-          [selectedVehicle?.startLocation, vehicleOrder?.location]
-        )
+        const data = await getLocation([
+          selectedVehicle?.startLocation,
+          vehicleOrder?.location,
+        ]);
 
         if (data && Array.isArray(data) && data.length >= 2) {
           // Cache the location data
           setCachedLocation(cacheKey, data);
-          
-          const startLocation = data[0].road + ", " + data[0].state + ", " + data[0].locality + ", " +  data[0].postcode + ", " + data[0].country; 
-          const endLocation = data[1].road + ", " + data[1].state + ", " + data[1].locality + ", " +  data[1].postcode + ", " + data[1].country; 
 
-          setStartLocation(startLocation)
-          setEndLocation(endLocation)
+          const startLocation =
+            data[0].road +
+            ", " +
+            data[0].state +
+            ", " +
+            data[0].locality +
+            ", " +
+            data[0].postcode +
+            ", " +
+            data[0].country;
+          const endLocation =
+            data[1].road +
+            ", " +
+            data[1].state +
+            ", " +
+            data[1].locality +
+            ", " +
+            data[1].postcode +
+            ", " +
+            data[1].country;
+
+          setStartLocation(startLocation);
+          setEndLocation(endLocation);
         }
       } catch (error) {
         console.error("Failed to fetch location:", error);
         setStartLocation("Locaton not found");
         setEndLocation("Locaton not found");
       }
-    }
+    };
     handleFetchingLocation();
-  }, [selectedVehicle, vehicleOrder, getCachedLocation, setCachedLocation])
+  }, [selectedVehicle, vehicleOrder, getCachedLocation, setCachedLocation]);
+
+      
+  const handleCopy = () => {
+      const copyInfo = copyRouteInfo(selectedVehicle?.id, vehicleOrder?.id, startLocation, endLocation, routeInfo);
+      if (!copyInfo) return;
+      
+      setCopySuccess(true);
+      setIsDisabled(true);
+      navigator.clipboard.writeText(copyInfo) 
+      setTimeout(() => {
+        setCopySuccess(false);
+        setIsDisabled(false);
+      }, 2000)
+    }
 
   return (
-    <motion.div 
+    <motion.div
       className="fixed top-4 right-4 z-40 w-full max-w-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg"
       layout
       transition={{ type: "tween", duration: 0.3 }}
@@ -78,7 +145,11 @@ export const RouteInfo: React.FC = () => {
         className={`w-full flex items-center justify-between p-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors border-b border-zinc-200 dark:border-zinc-700 ${isOpen ? "bg-zinc-100 dark:bg-zinc-800" : ""}`}
       >
         <div className="flex items-center gap-3">
-          {loading ? <Loader2 className="animate-spin" size={20} /> : <Van className="animate-pulse" size={20} />}
+          {loading ? (
+            <Loader2 className="animate-spin" size={20} />
+          ) : (
+            <Van className="animate-pulse" size={20} />
+          )}
           <h1 className="text-md font-bold text-zinc-900 dark:text-white uppercase tracking-tight">
             Route Information
           </h1>
@@ -90,7 +161,10 @@ export const RouteInfo: React.FC = () => {
           {isOpen ? (
             <ChevronUp size={20} className="text-zinc-600 dark:text-zinc-400" />
           ) : (
-            <ChevronDown size={20} className="text-zinc-600 dark:text-zinc-400" />
+            <ChevronDown
+              size={20}
+              className="text-zinc-600 dark:text-zinc-400"
+            />
           )}
         </motion.div>
       </button>
@@ -108,36 +182,70 @@ export const RouteInfo: React.FC = () => {
             <div className="p-4 space-y-3">
               {/* Location Information */}
               <div className="flex flex-col justify-center items-start space-y-2">
-                <span className="flex justify-start items-center gap-2 w-full">
-                  <Circle className="fill-green-500 text-green-500 size-2 animate-pulse shrink-0" /> 
-                  <p className="text-sm text-zinc-700 dark:text-zinc-300 wrap-break-word">{startLocation || "Start location..."}</p>
-                </span>
-                <span className="flex justify-start items-center gap-2 w-full">
-                  <Circle className="fill-red-500 text-red-500 size-2 animate-pulse shrink-0" /> 
-                  <p className="text-sm text-zinc-700 dark:text-zinc-300 wrap-break-word">{endLocation || "End location..."}</p>
-                </span>
+                <div className="flex justify-between items-center">
+                  {/* Start location + Copy Button at the end of Start Location Info */}
+                  <div className="flex flex-2 justify-start items-center gap-2 w-full">
+                    <Circle className="fill-green-500 text-green-500 size-2 animate-pulse shrink-0" />
+                    <p className="text-sm font-extrabold text-zinc-700 dark:text-zinc-300 wrap-break-word">
+                      {startLocation || "Start location..."}
+                    </p>
+                  </div>
+                  {/* Only render copy button if valid route info exists */}
+                  {routeInfo && (
+                    <div className="flex justify-end items-center">
+                      <Button
+                        variant={'ghost'}
+                        onClick={() => handleCopy()}
+                        disabled={isDisabled}
+                      >
+                        {copySuccess ?
+                          <CircleCheckBig size={'20'} className='dark:text-zinc-400 text-zinc-600'/>
+                          : 
+                          <Copy size={'20'} className='dark:text-zinc-200 text-zinc-600'/>
+                          }
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {/* End location */}
+                <div className="flex justify-start items-center gap-2 w-full">
+                  <Circle className="fill-red-500 text-red-500 size-2 animate-pulse shrink-0" />
+                  <p className="text-sm font-extrabold text-zinc-700 dark:text-zinc-300 wrap-break-word">
+                    {endLocation || "End location..."}
+                  </p>
+                </div>
               </div>
 
               {/* Route Options */}
               {routeInfo && Array.isArray(routeInfo) && routeInfo.length > 0 ? (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {routeInfo.map((route, index) => (
-                    <div key={index} className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg">
+                    <div
+                      key={index}
+                      className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg"
+                    >
                       <span className="flex items-center justify-between mb-2">
                         <p className="text-md text-zinc-600 dark:text-zinc-400 uppercase font-semibold">
                           Route Option {index + 1}
                         </p>
-                        <Route size={16} className="text-zinc-500 dark:text-zinc-400" />
+                        <Route
+                          size={16}
+                          className="text-zinc-500 dark:text-zinc-400"
+                        />
                       </span>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <p className="text-xs text-zinc-600 dark:text-zinc-400">Distance</p>
+                          <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                            Distance
+                          </p>
                           <p className="text-lg font-bold text-zinc-900 dark:text-white">
                             {formatDistance(route.distance)}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-zinc-600 dark:text-zinc-400">Duration</p>
+                          <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                            Duration
+                          </p>
                           <p className="text-lg font-bold text-zinc-900 dark:text-white">
                             {formatDuration(route.duration)}
                           </p>
@@ -155,7 +263,9 @@ export const RouteInfo: React.FC = () => {
                       </p>
                       <Route size={16} />
                     </span>
-                    <p className="text-lg font-bold text-zinc-900 dark:text-white">-</p>
+                    <p className="text-lg font-bold text-zinc-900 dark:text-white">
+                      -
+                    </p>
                   </div>
                   <div className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg">
                     <span className="flex items-center justify-between mb-2">
@@ -164,7 +274,9 @@ export const RouteInfo: React.FC = () => {
                       </p>
                       <ClockFading size={16} />
                     </span>
-                    <p className="text-lg font-bold text-zinc-900 dark:text-white">-</p>
+                    <p className="text-lg font-bold text-zinc-900 dark:text-white">
+                      -
+                    </p>
                   </div>
                 </div>
               )}
