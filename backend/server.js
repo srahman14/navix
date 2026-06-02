@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 
 // Routes
-import route from "./routes/route.route.js";
+import navigation from "./routes/navigation.route.js";
 const app = express();
 const port = 8080;
 
@@ -22,7 +22,7 @@ app.get("/", (req, res) => {
 // Input: coordinates [lng, lat]
 // Returns: route (geometry)
 // Frontend displays the route on the map
-app.use("/api/v1/", route);
+app.use("/api/v1/", navigation);
 
 // POST /api/route/{orderID}
 // Input: orderID -> checks if we have the route

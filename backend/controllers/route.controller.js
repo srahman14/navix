@@ -1,7 +1,7 @@
 import { fetchFromORS } from "../services/ors.service.js";
 
-export async function getRouteForCar(req, res) {
-  const { coordinates } = req.body;
+export async function getRouteForProfile(req, res) {
+  const { coordinates, profile = "driving-car" } = req.body;
 
   // Validate coordinates
   if (!coordinates || coordinates.length < 2) {
@@ -12,10 +12,7 @@ export async function getRouteForCar(req, res) {
   }
 
   try {
-    const data = await fetchFromORS(
-      "https://api.openrouteservice.org/v2/directions/driving-car",
-      coordinates,
-    );
+    const data = await fetchFromORS(profile, coordinates);
 
     res.status(200).json({ 
         success: true, 

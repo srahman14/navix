@@ -1,7 +1,23 @@
 import { ENV_VARS } from "../config/envVars.js";
 import { convertPolylineToCoordinates } from "../utils/polyline.js";
 
-export const fetchFromORS = async (url, coordinates) => {
+// Supported ORS profiles
+const ORS_PROFILES = {
+    "driving-car": "https://api.openrouteservice.org/v2/directions/driving-car",
+    "driving-hgv": "https://api.openrouteservice.org/v2/directions/driving-hgv",
+    "cycling-regular": "https://api.openrouteservice.org/v2/directions/cycling-regular",
+    "cycling-mountain": "https://api.openrouteservice.org/v2/directions/cycling-mountain",
+    "foot-walking": "https://api.openrouteservice.org/v2/directions/foot-walking",
+};
+
+export const fetchFromORS = async (profile = "driving-car", coordinates) => {
+    // Validate profile
+    if (!ORS_PROFILES[profile]) {
+        throw new Error(`Invalid profile: ${profile}. Supported profiles: ${Object.keys(ORS_PROFILES).join(", ")}`);
+    }
+
+    const url = ORS_PROFILES[profile];
+
     const response = await fetch(url, {
         method: "POST",
         headers: {
