@@ -18,6 +18,14 @@ app.get("/", (req, res) => {
   res.send("Server running");
 });
 
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // POST /api/route
 // Input: coordinates [lng, lat]
 // Returns: route (geometry)
