@@ -19,8 +19,8 @@ export const getMetricsFromRoutes = async (routes) => {
         const arrivalDate = new Date(startDate.getTime() + duration * 1000);
         
         return {
-            distance: formatDistance(distance),
-            duration: formatDuration(duration),
+            distance: distance,
+            duration: duration,
             startTime: startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
             arrivalTime: arrivalDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
         };

@@ -1,3 +1,5 @@
+// TODO: need to store routes in database for persistence
+
 import { ENV_VARS } from "../config/envVars.js";
 import { convertPolylineToCoordinates } from "../utils/polyline.js";
 
@@ -57,7 +59,6 @@ export const fetchFromORS = async (profile = "driving-car", coordinates) => {
             way_points: route.way_points,
             geometry: {
                 encoded: route.geometry,
-                decoded,
             },
         };
     })
