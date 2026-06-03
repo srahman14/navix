@@ -11,6 +11,8 @@ import type { Vehicle, Order, RouteInfo } from "@/types";
 import { useNavigationStore } from "@/store/navigation-store";
 import { toast } from "react-hot-toast";
 import { registerMapIcons, MAP_ICONS, reloadMapIcons } from "@/lib/map-icons";
+import { decodePolyline } from "@/lib/polyline"
+import { useRoute } from "../../hooks/useRoute";
 
 interface MapComponentProps {
   vehicles: Vehicle[];
@@ -23,30 +25,30 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
     latitude: 51.4971,
     zoom: 13,
   });
-  const [routeData, setRouteData] =
-    useState<FeatureCollection<LineString> | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const { resolvedTheme } = useTheme();
 
+  const { resolvedTheme } = useTheme();
   // Animation state
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
-
-  // mapRef
+  
+  // Map reference
   const mapRef = useRef<MapRef | null>(null);
-
-  useEffect(() => {
-    console.log(resolvedTheme)
-  }, [resolvedTheme])
   
   useEffect(() => {
     const map = mapRef.current?.getMap();
-
+    
     if (!map || !resolvedTheme) return;
-
+    
     reloadMapIcons(map, resolvedTheme);
   }, [resolvedTheme])
+  
+  const {
+    selectedVehicle,
+    isLoadingRoute,
+  } = useNavigationStore();
+  
+  const { routeData, error } = useRoute(selectedVehicle);
 
   // Extract route coordinates from routeData
   useEffect(() => {
@@ -60,143 +62,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
       setIsAnimating(false);
     }
   }, [routeData]);
-
-  const {
-    selectedVehicle,
-    getOrderById,
-    setRoutes,
-    setLoadingRoute,
-    setRouteError,
-    setRouteInfo,
-    isLoadingRoute,
-    getCachedRoute,
-  } = useNavigationStore();
-
-
-  // Fetch route from cache or API
-  useEffect(() => {
-    if (!selectedVehicle) return;
-
-    const order = getOrderById(selectedVehicle.orderId);
-    if (!order) return;
-
-    const handleRoute = async () => {
-      try {
-        setLoadingRoute(true);
-        setRouteError(null);
-
-        // First, try to get cached route
-        const cachedRoutes = getCachedRoute(selectedVehicle.id);
-
-        if (cachedRoutes && cachedRoutes.length > 0) {
-          // Use cached routes
-          toast.success("Fetched from cache");
-          const firstRoute = cachedRoutes[0];
-          const routeCoordinates = firstRoute.geometry.decoded;
-
-          const routeFeature: FeatureCollection<LineString> = {
-            type: "FeatureCollection",
-            features: [
-              {
-                type: "Feature",
-                geometry: {
-                  type: "LineString",
-                  coordinates: routeCoordinates,
-                },
-                properties: {
-                  distance: firstRoute.summary?.distance,
-                  duration: firstRoute.summary?.duration,
-                },
-              },
-            ],
-          };
-          setRouteData(routeFeature);
-
-          // Extract route infos from all cached alternatives
-          const routeInfos = cachedRoutes.map((route: any) => ({
-            distance: route.summary?.distance || null,
-            duration: route.summary?.duration || null,
-          }));
-          setRouteInfo(routeInfos);
-          setLoadingRoute(false);
-          return;
-        }
-
-        // If not cached, fetch from API
-        // Profile is set to 'driving-car' by default as of now
-        const routeData = await getRoute([
-          selectedVehicle.startLocation,
-          order.location,
-        ],
-        "driving-car",
-      );
-
-        if (routeData?.routes && routeData.routes.length > 0) {
-          // Use the first route from the alternatives for visualization
-          const firstRoute = routeData.routes[0];
-          const routeCoordinates = firstRoute.geometry.decoded;
-
-          const routeFeature: FeatureCollection<LineString> = {
-            type: "FeatureCollection",
-            features: [
-              {
-                type: "Feature",
-                geometry: {
-                  type: "LineString",
-                  coordinates: routeCoordinates,
-                },
-                properties: {
-                  distance: firstRoute.summary?.distance,
-                  duration: firstRoute.summary?.duration,
-                },
-              },
-            ],
-          };
-          setRouteData(routeFeature);
-
-          // Extract route infos from all alternatives
-          const routeInfos = routeData.routes.map((route: any) => ({
-            distance: route.summary?.distance || null,
-            duration: route.summary?.duration || null,
-          }));
-          setRouteInfo(routeInfos);
-          setLoadingRoute(false);
-        }
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to fetch route";
-        setError(errorMessage);
-        console.error("Route fetch error:", err);
-
-        // Fallback to basic line with updated coordinates
-        const startCoords = [-0.1606, 51.4769];
-        const endCoords = [-0.0759, 51.5173];
-
-        const basicRoute: FeatureCollection<LineString> = {
-          type: "FeatureCollection",
-          features: [
-            {
-              type: "Feature",
-              geometry: {
-                type: "LineString",
-                coordinates: [startCoords, endCoords],
-              },
-              properties: {},
-            },
-          ],
-        };
-        setRouteData(basicRoute);
-      } finally {
-        setLoadingRoute(false);
-      }
-    };
-
-    handleRoute();
-  }, [selectedVehicle, setRouteInfo, getOrderById, getCachedRoute]);
+  
 
   // Filter vehicles that have orders attached
   const vehiclesWithOrders = vehicles.filter((v) => v.orderId);
-
+  
   // Animation loop - moves route line from vehicle coordintes to order coordinates
   useEffect(() => {
     if (routeCoordinates.length === 0 || !isAnimating) {
@@ -289,9 +159,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
   return (
     <div className="w-full h-screen">
       {error && !isLoadingRoute && (
-        <div className="absolute top-4 left-4 bg-red-100 dark:bg-red-900 p-3 rounded shadow z-10">
-          <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
-        </div>
+        toast.error(error)
       )}
       <Map
         {...viewState}
