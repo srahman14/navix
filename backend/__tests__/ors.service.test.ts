@@ -6,14 +6,6 @@ jest.mock("../config/envVars.js", () => ({
   },
 }));
 
-// Mock the polyline conversion
-jest.mock("../utils/polyline.js", () => ({
-  convertPolylineToCoordinates: jest.fn(() => [
-    [51.5, -0.12],
-    [51.51, -0.11],
-  ]),
-}));
-
 import { fetchFromORS } from "../services/ors.service";
 import { ENV_VARS } from "../config/envVars.js";
 
@@ -65,7 +57,7 @@ describe("fetchFromORS", () => {
     });
 
     const result = await fetchFromORS(
-      ENV_VARS.ORS_API_URL_CAR,
+      "driving-car",
       [
         [51.5001, 0.1278],
         [51.5001, -0.07649],
@@ -101,11 +93,9 @@ describe("fetchFromORS", () => {
     expect(result.bbox).toEqual([0, 0, 1, 1]);
     expect(result.metadata).toEqual({ engine: { version: "8.0" } });
     expect(result.routes).toHaveLength(1);
-    expect(result.routes[0].geometry.encoded).toBe("mockEncodedPolyline");
-    expect(result.routes[0].geometry.decoded).toEqual([
-      [51.5, -0.12],
-      [51.51, -0.11],
-    ]);
+    expect(result.routes[0].geometry).toEqual({
+      encoded: "mockEncodedPolyline"
+    });
   });
 
   it("throws when API fails", async () => {
@@ -116,7 +106,7 @@ describe("fetchFromORS", () => {
 
     await expect(
       fetchFromORS(
-        ENV_VARS.ORS_API_URL_CAR,
+        "driving-car",
         [
           [51.5001, 0.1278],
           [51.5001, -0.07649],

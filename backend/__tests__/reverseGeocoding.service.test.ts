@@ -3,8 +3,17 @@ import { reverseGeocode } from '../services/reverseGeocoding.service';
 global.fetch = jest.fn();
 
 describe('reverseGeocode', () => {
+  let consoleSpy: jest.SpyInstance; 
+
   beforeEach(() => {
     jest.clearAllMocks();
+
+    consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    // Restore original console.error behavior after each test
+    consoleSpy.mockRestore();
   });
 
   it('should return location details for valid coordinates', async () => {
@@ -29,6 +38,9 @@ describe('reverseGeocode', () => {
       region: 'England',
       country: 'United Kingdom',
       display_name: 'London, England, United Kingdom',
+      road: undefined,
+      state: 'England',
+      postcode: undefined,
       coordinates: { lat: 51.5074, lng: -0.1278 },
     });
 

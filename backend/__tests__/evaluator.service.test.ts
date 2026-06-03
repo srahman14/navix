@@ -30,7 +30,7 @@ describe('getMetricsFromRoutes', () => {
       };
       
       const result = await getMetricsFromRoutes(mockRoute);
-      expect(result[0].distance).toBe('5.00 km');
+      expect(result[0].distance).toBe(5000);
     });
 
     it('should format duration correctly', async () => {
@@ -42,7 +42,7 @@ describe('getMetricsFromRoutes', () => {
       };
       
       const result = await getMetricsFromRoutes(mockRoute);
-      expect(result[0].duration).toBe('5 min');
+      expect(result[0].duration).toBe(300);
     });
 
     it('should return valid time strings for startTime and arrivalTime', async () => {
@@ -54,7 +54,8 @@ describe('getMetricsFromRoutes', () => {
       };
       
       const result = await getMetricsFromRoutes(mockRoute);
-      const timeRegex = /^\d{2}:\d{2}$/; // Format: "21:10" (HH:MM)
+      // Format: "21:10" (HH:MM)
+      const timeRegex = /^\d{2}:\d{2}$/; 
       
       expect(result[0].startTime).toMatch(timeRegex);
       expect(result[0].arrivalTime).toMatch(timeRegex);
@@ -74,7 +75,8 @@ describe('getMetricsFromRoutes', () => {
       
       // Should be approximately 480 seconds apart
       const timeDiff = (arrivalTime.getTime() - startTime.getTime()) / 1000;
-      expect(Math.abs(timeDiff - 480)).toBeLessThan(1); // Allow 1 second tolerance
+      // Allow 1 second tolerance
+      expect(Math.abs(timeDiff - 480)).toBeLessThan(1); 
     });
   });
 
@@ -106,10 +108,10 @@ describe('getMetricsFromRoutes', () => {
       
       const result = await getMetricsFromRoutes(mockRoutes);
       
-      expect(result[0].distance).toBe('5.00 km');
-      expect(result[0].duration).toBe('5 min');
-      expect(result[1].distance).toBe('10.00 km');
-      expect(result[1].duration).toBe('10 min');
+      expect(result[0].distance).toBe(5000);
+      expect(result[0].duration).toBe(300);
+      expect(result[1].distance).toBe(10000);
+      expect(result[1].duration).toBe(600);
     });
   });
 
@@ -123,8 +125,8 @@ describe('getMetricsFromRoutes', () => {
       };
       
       const result = await getMetricsFromRoutes(mockRoute);
-      expect(result[0].distance).toBe('0.10 km');
-      expect(result[0].duration).toBe('0 min');
+      expect(result[0].distance).toBe(100);
+      expect(result[0].duration).toBe(30);
     });
 
     it('should handle very long routes', async () => {
@@ -136,8 +138,8 @@ describe('getMetricsFromRoutes', () => {
       };
       
       const result = await getMetricsFromRoutes(mockRoute);
-      expect(result[0].distance).toBe('500.00 km');
-      expect(result[0].duration).toBe('300 min');
+      expect(result[0].distance).toBe(500000);
+      expect(result[0].duration).toBe(18000);
     });
 
     it('should handle zero distance and duration', async () => {
@@ -149,8 +151,8 @@ describe('getMetricsFromRoutes', () => {
       };
       
       const result = await getMetricsFromRoutes(mockRoute);
-      expect(result[0].distance).toBe('0.00 km');
-      expect(result[0].duration).toBe('0 min');
+      expect(result[0].distance).toBe(0);
+      expect(result[0].duration).toBe(0);
     });
   });
 
