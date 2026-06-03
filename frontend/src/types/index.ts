@@ -21,3 +21,5 @@ export interface RouteInfo {
   distance: number | null;
   duration: number | null;
 };
+
+// TODO: add a type for Route
