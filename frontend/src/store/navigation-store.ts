@@ -5,7 +5,7 @@ import { getRoute } from "@/lib/api";
 
 type RouteData = {
   geometry: {
-    decoded: [number, number][];
+    encoded: string;
   };
   summary: {
     distance: number;
