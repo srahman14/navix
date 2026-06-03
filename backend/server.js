@@ -3,6 +3,9 @@ import cors from "cors";
 
 // Routes
 import navigation from "./routes/navigation.route.js";
+import vehicleRoutes from "./routes/vehicle.route.js"
+import orderRoutes from "./routes/order.route.js"
+
 const app = express();
 const port = 8080;
 
@@ -26,11 +29,11 @@ app.get("/health", (req, res) => {
   });
 });
 
-// POST /api/route
-// Input: coordinates [lng, lat]
-// Returns: route (geometry)
-// Frontend displays the route on the map
+
+// Add Routes
 app.use("/api/v1/", navigation);
+app.use("/api/v1/", vehicleRoutes)
+app.use("/api/v1/", orderRoutes)
 
 // POST /api/route/{orderID}
 // Input: orderID -> checks if we have the route
