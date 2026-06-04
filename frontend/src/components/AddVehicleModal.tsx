@@ -8,6 +8,7 @@ import { useNavigationStore } from "@/store/navigation-store";
 
 interface AddVehicleModalProps {
   open: boolean;
+  editMode: boolean;
   onOpenChange: (open: boolean) => void;
   orders: Order[];
   onSubmitVehicle: (vehicle: Vehicle) => void;
@@ -29,26 +30,46 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
     id: string;
     status: "active" | "pending" | "idle";
     load: number;
-    latitude: string;
-    longitude: string;
-    selectedOrderId: string;
+    latitude: number;
+    longitude: number;
+    selectedOrderId?: string;
   }>({
     id: "",
     status: "idle",
     load: 0,
-    latitude: "",
-    longitude: "",
+    latitude: 0,
+    longitude: 0,
     selectedOrderId: "",
   });
 
+  const editMode = useNavigationStore((state) => state.editingMode);
+  const setEditingMode = useNavigationStore((state) => state.setEditingMode);
+  const updatedVehicle = useNavigationStore((state) => state.updateVehicle);
+  const editingVehicleId = useNavigationStore((state) => state.editingVehicleId);
+  const getVehicleById = useNavigationStore((state) => state.getVehicleById);
+  const vehicleToEdit = (editingVehicleId != null) ? getVehicleById(editingVehicleId) : null; 
+
   useEffect(() => {
     if (open) {
+      if (editMode && vehicleToEdit) {
+        setFormData({
+          id: vehicleToEdit?.id,
+          status: vehicleToEdit?.status,
+          load: vehicleToEdit?.load,
+          latitude: vehicleToEdit?.startLocation[1],
+          longitude: vehicleToEdit?.startLocation[0],
+          selectedOrderId: vehicleToEdit?.orderId,
+        })
+        return;
+      };
+
+
       setFormData({
         id: generateVehicleId(),
         status: "idle",
         load: 0,
-        latitude: "",
-        longitude: "",
+        latitude: 0,
+        longitude: 0,
         selectedOrderId: "",
       });
     }
@@ -79,6 +100,12 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
       orderId: formData.selectedOrderId || undefined,
     };
 
+    if (editMode && editingVehicleId != null) {
+      updatedVehicle(editingVehicleId, newVehicle)
+      setEditingMode(false);
+      onOpenChange(false);
+    }
+
     onSubmitVehicle(newVehicle);
 
     // Pre-fetch and cache route if vehicle has a valid order
@@ -100,7 +127,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
         <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 rounded-lg">
           <div className="flex items-center justify-between">
             <Dialog.Title className="text-lg font-semibold text-zinc-900 dark:text-white">
-              Add Vehicle
+              {editMode ? "Edit Vehicle" : "Add Vehicle"}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button className="rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 dark:ring-offset-zinc-950 dark:text-zinc-400">

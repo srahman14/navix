@@ -11,6 +11,7 @@ import { AddVehicleModal } from "./AddVehicleModal";
 import { AddOrderModal } from "./AddOrderModal";
 import ActiveVehiclesModal from "./ActiveVehiclesModal";
 import ActiveOrdersModal from "./ActiveOrdersModal";
+import { Order, Vehicle } from "@/types";
 
 const NavigationSidebar: React.FC = () => {
   const { isOpen, toggleSidebar } = useSidebarStore();
@@ -21,13 +22,22 @@ const NavigationSidebar: React.FC = () => {
   const orders = useNavigationStore((state) => state.orders);
   const addVehicle = useNavigationStore((state) => state.addVehicle);
   const addOrder = useNavigationStore((state) => state.addOrder);
+  const updateVehicle = useNavigationStore((state) => state.updateVehicle);
+  const updateOrder = useNavigationStore((state) => state.updateOrder);
+  const editMode = useNavigationStore((state) => state.editingMode);
+  const setEditMode = useNavigationStore((state) => state.setEditingMode);
 
-  const handleAddVehicle = (vehicle: any) => {
+  const handleAddVehicle = (vehicle: Vehicle) => {
     addVehicle(vehicle);
     closeModal();
   };
 
-  const handleAddOrder = (order: any) => {
+  const handleUpdateVehicle = (vehicle: Vehicle) => {
+    updateVehicle(vehicle.id, vehicle);
+    closeModal();  
+  }
+
+  const handleAddOrder = (order: Order) => {
     addOrder(order);
     closeModal();
   };
@@ -75,7 +85,9 @@ const NavigationSidebar: React.FC = () => {
       {modalType === "vehicle" && (
         <AddVehicleModal
           open={isModalOpen}
+          editMode={false}
           onOpenChange={(open) => {
+            if (editMode) setEditMode(false);
             if (!open) closeModal();
           }}
           orders={orders}
