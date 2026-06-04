@@ -30,15 +30,15 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
     id: string;
     status: "active" | "pending" | "idle";
     load: number;
-    latitude: number;
-    longitude: number;
+    latitude: string;
+    longitude: string;
     selectedOrderId?: string;
   }>({
     id: "",
     status: "idle",
     load: 0,
-    latitude: 0,
-    longitude: 0,
+    latitude: "",
+    longitude: "",
     selectedOrderId: "",
   });
 
@@ -56,8 +56,8 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
           id: vehicleToEdit?.id,
           status: vehicleToEdit?.status,
           load: vehicleToEdit?.load,
-          latitude: vehicleToEdit?.startLocation[1],
-          longitude: vehicleToEdit?.startLocation[0],
+          latitude: (vehicleToEdit?.startLocation[1]).toString(),
+          longitude: (vehicleToEdit?.startLocation[0]).toString(),
           selectedOrderId: vehicleToEdit?.orderId,
         })
         return;
@@ -68,8 +68,8 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
         id: generateVehicleId(),
         status: "idle",
         load: 0,
-        latitude: 0,
-        longitude: 0,
+        latitude: "",
+        longitude: "",
         selectedOrderId: "",
       });
     }
@@ -91,6 +91,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
       return;
     }
 
+    // Vehicle to add / update
     const newVehicle: Vehicle = {
       id: formData.id,
       status: formData.status,
