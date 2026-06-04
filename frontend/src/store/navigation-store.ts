@@ -39,6 +39,7 @@ type NavigationStore = {
   // Modal State
   isModalOpen: boolean;
   modalType: "vehicle" | "order" | "active-vehicles" | "active-orders" | null;
+  editingMode: true | false;
   editingVehicleId: string | null;
   editingOrderId: string | null;
 
@@ -58,6 +59,8 @@ type NavigationStore = {
   // Vehicles
   setVehicles: (vehicles: Vehicle[]) => void;
   addVehicle: (vehicle: Vehicle) => void;
+  setEditingVehicleId: (id: string | null) => void;
+  setEditingMode: (editing: boolean) => void;
   deleteVehicle: (id: string) => void;
   updateVehicle: (id: string, vehicle: Vehicle) => void;
   // Orders
@@ -105,6 +108,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   selectedOrder: null,
   isModalOpen: false,
   modalType: null,
+  editingMode: false,
   editingVehicleId: null,
   editingOrderId: null,
   routes: [],
@@ -122,13 +126,16 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     try {
       set((state) => ({
         vehicles: [...state.vehicles, vehicle],
-        
       }))
       toast.success("Added vehicle...");
     } catch (err) {
       toast.error("Failed to add vehicle. Try again.");
     }
     },
+
+  setEditingVehicleId: (id) => set({ editingVehicleId: id }),
+
+  setEditingMode: (editing) => set({ editingMode: editing }),
 
   deleteVehicle: (id) => {
     // Clear cached routes for this vehicle
