@@ -8,15 +8,6 @@ import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
-  const { resolvedTheme } = useTheme();
-
-  if (!resolvedTheme) return null;
-
-  const path =
-    resolvedTheme === "dark"
-      ? "/icons/light/Github_Invertocat_White.svg"
-      : "/icons/dark/Github_Invertocat_Black.svg";
-
   return (
     <main className="flex flex-col flex-1 items-center justify-center bg-zinc-50 dark:bg-black font-mono">
       <div className="max-w-3xl container items-center justify-center">

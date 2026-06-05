@@ -8,7 +8,6 @@ import { useNavigationStore } from "@/store/navigation-store";
 
 interface AddVehicleModalProps {
   open: boolean;
-  editMode: boolean;
   onOpenChange: (open: boolean) => void;
   orders: Order[];
   onSubmitVehicle: (vehicle: Vehicle) => void;
