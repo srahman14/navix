@@ -85,7 +85,6 @@ const NavigationSidebar: React.FC = () => {
       {modalType === "vehicle" && (
         <AddVehicleModal
           open={isModalOpen}
-          editMode={false}
           onOpenChange={(open) => {
             if (editMode) setEditMode(false);
             if (!open) closeModal();
