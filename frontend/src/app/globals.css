@@ -131,3 +131,32 @@ body {
     @apply font-sans;
   }
 }
+
+/* Animations for 404 page */
+@keyframes dash {
+  0%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dashoffset: 120;
+  }
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-8px) translateX(4px);
+  }
+}
+@keyframes floatAlt {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(6px) translateX(-6px);
+  }
+}

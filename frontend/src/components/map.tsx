@@ -31,7 +31,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
-  
+
   // Map reference
   const mapRef = useRef<MapRef | null>(null);
   
@@ -49,18 +49,29 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
   } = useNavigationStore();
   
   const { routeData, error } = useRoute(selectedVehicle);
+  const cacheRoute = useNavigationStore((state) => state.routeCache);
+
+
+//   const routeKey = useMemo(() => {
+//   if (!selectedVehicle) return null;
+
+//   return `${selectedVehicle.id}-${selectedVehicle.startLocation.join(",")}`;
+// }, [selectedVehicle]);
 
   // Extract route coordinates from routeData
   useEffect(() => {
-    if (routeData && routeData.features.length > 0) {
-      const coordinates = routeData.features[0].geometry.coordinates;
-      setRouteCoordinates(coordinates.map(coord => [coord[0], coord[1]] as [number, number]));
+    if (!routeData || routeData.features.length === 0) return;
+
+    const coordinates = routeData.features[0].geometry.coordinates;
+
+    // slight delay ensures map source clears first
+    requestAnimationFrame(() => {
+      setRouteCoordinates(
+        coordinates.map((coord) => [coord[0], coord[1]] as [number, number])
+      );
       setCurrentStep(0);
       setIsAnimating(true);
-    } else {
-      setRouteCoordinates([]);
-      setIsAnimating(false);
-    }
+    });
   }, [routeData]);
   
 

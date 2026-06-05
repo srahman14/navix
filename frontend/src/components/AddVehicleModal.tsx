@@ -8,7 +8,6 @@ import { useNavigationStore } from "@/store/navigation-store";
 
 interface AddVehicleModalProps {
   open: boolean;
-  editMode: boolean;
   onOpenChange: (open: boolean) => void;
   orders: Order[];
   onSubmitVehicle: (vehicle: Vehicle) => void;
@@ -46,6 +45,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
   const setEditingMode = useNavigationStore((state) => state.setEditingMode);
   const updatedVehicle = useNavigationStore((state) => state.updateVehicle);
   const editingVehicleId = useNavigationStore((state) => state.editingVehicleId);
+  const setEditingVehicleId = useNavigationStore((state) => state.setEditingVehicleId);
   const getVehicleById = useNavigationStore((state) => state.getVehicleById);
   const vehicleToEdit = (editingVehicleId != null) ? getVehicleById(editingVehicleId) : null; 
 
@@ -73,7 +73,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
         selectedOrderId: "",
       });
     }
-  }, [open]);
+  }, [open, editMode, vehicleToEdit]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,10 +104,13 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
     if (editMode && editingVehicleId != null) {
       updatedVehicle(editingVehicleId, newVehicle)
       setEditingMode(false);
+      setEditingVehicleId(null);
       onOpenChange(false);
+    } else {
+      onSubmitVehicle(newVehicle);
     }
 
-    onSubmitVehicle(newVehicle);
+
 
     // Pre-fetch and cache route if vehicle has a valid order
     if (formData.selectedOrderId) {
