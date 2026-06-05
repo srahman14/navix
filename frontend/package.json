@@ -12,6 +12,7 @@
   "dependencies": {
     "@mapbox/polyline": "^1.2.1",
     "@radix-ui/react-dialog": "^1.1.15",
+    "@supabase/supabase-js": "^2.107.0",
     "@vis.gl/react-maplibre": "^8.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
