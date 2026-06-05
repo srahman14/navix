@@ -2,12 +2,16 @@
 
 import { ModeToggle } from "@/components/theme-toggler";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, MoveRight } from "lucide-react";
+import { ArrowUpRight, LogOut, MoveRight, User } from "lucide-react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
+import { useUser } from "../../hooks/useUser";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function Home() {
+  const { user, loading } = useUser();
+
   return (
     <main className="relative flex flex-col flex-1 items-center justify-center bg-zinc-50 dark:bg-black font-mono overflow-hidden">
       {/* GRID BACKGROUND */}
@@ -31,7 +35,7 @@ export default function Home() {
           <rect width="100%" height="100%" fill="url(#grid)" />
         </svg>
       </div>
-      <div className="max-w-3xl container items-center justify-center">
+      <div className="flex flex-col max-w-3xl container items-center justify-center">
         <div>
           <header className="flex items-center justify-center">
             <img
@@ -41,6 +45,12 @@ export default function Home() {
           </header>
         </div>
         <div className="flex justify-center mt-4 space-x-2 items-center">
+          {user && !loading && (
+            <Button onClick={() => supabase.auth.signOut()} variant={"outline"} className="cursor-pointer">
+            <LogOut />
+          </Button>
+          )}
+
           <ModeToggle />
 
           <Button className="cursor-pointer" variant={"outline"}>
@@ -57,6 +67,7 @@ export default function Home() {
               </span>
             </Link>
           </Button>
+          {user && !loading && (
           <Button className="cursor-pointer" variant={"outline"}>
             <Link href={"/navigation"}>
               <span className="flex items-center justify-content-center space-x-2">
@@ -65,7 +76,27 @@ export default function Home() {
               </span>
             </Link>
           </Button>
+          )}
+
+          
         </div>
+              {user && !loading ?   (
+              <div className="inline-flex justify-baseline items-baseline space-x-3 ">
+                <p className="mt-8 text-xs cursor-default font-semibold text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors tracking-tight">
+                  Logged in: {user?.email}
+                </p>
+              </div>
+            ) : (
+              <Link
+                href={"/auth/login"}
+                className="inline-flex text-xs mt-8 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
+              >
+                please log in to access the dashboard
+                <span className="ml-1 items-center space-x-1">
+                  <ArrowUpRight size={16} />
+                </span>
+              </Link>
+            )}
       </div>
     </main>
   );

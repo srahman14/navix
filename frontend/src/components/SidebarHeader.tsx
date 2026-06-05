@@ -2,10 +2,12 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Columns2 } from "lucide-react";
+import { ArrowUpRight, Columns2, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { ModeToggle } from "./theme-toggler";
 import { StatsGrid } from "./StatsGrid";
+import Link from "next/link";
+import { useUser } from "../../hooks/useUser";
 
 interface SidebarHeaderProps {
   isOpen: boolean;
@@ -18,6 +20,8 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
   onToggleSidebar,
   onSearchChange,
 }) => {
+  const { user, loading } = useUser();
+
   return (
     <>
       {/* Header - Open State */}
@@ -27,12 +31,23 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
             animate={{ opacity: isOpen ? 1 : 0 }}
             transition={{ duration: 0.2, delay: isOpen ? 0.1 : 0 }}
           >
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tighter">
+            <Link
+              href={"/"}
+              className="text-2xl font-bold text-zinc-900 dark:text-white cursor-pointer hover:text-zinc-700 hover:dark:text-zinc-200 tracking-tighter"
+            >
               navix
-            </h1>
+            </Link>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
               route optimization
             </p>
+
+            {user && !loading && (
+              <div className="inline-flex justify-baseline items-baseline space-x-3 ">
+                <p className="mt-8 text-xs cursor-default font-semibold text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors tracking-tight">
+                  Logged in: {user?.email}
+                </p>
+              </div> 
+            )}
           </motion.div>
 
           <div className="flex items-center justify-center space-x-2 shrink-0">
