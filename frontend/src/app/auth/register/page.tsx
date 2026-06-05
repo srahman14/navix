@@ -2,6 +2,9 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabaseClient'
+import { useRouter } from 'next/navigation'
+import { toast } from 'react-hot-toast'
 
 const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false)
@@ -9,13 +12,38 @@ const RegisterPage = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSignup = async (e: any) => {
     e.preventDefault()
-    setIsLoading(true)
-    // Simulate registration
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    setIsLoading(false)
+    setIsLoading(true);
+
+    if (password !== confirmPassword) {
+        toast.error("Passwords do not mathch. Please try again.");
+        setIsLoading(false);
+        return;
+    }
+
+    if (password.length < 6) {
+        toast.error("Password must be at least 6 characters long.");
+        setIsLoading(false);
+        return;
+    }
+
+    const { error } = await supabase.auth.signUp({
+        email,
+        password,   
+    });
+
+    if (error) {
+        toast.error(error.message);
+        setIsLoading(false);
+        return;
+    }
+
+    toast.success('Registration successful! Please check your email to confirm your account.');
+    router.push('/auth/login');
+    setIsLoading(false);
   }
 
   return (
@@ -107,7 +135,7 @@ const RegisterPage = () => {
             </span>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSignup} className="space-y-4">
             {/* Name field */}
             <div className="space-y-2">
               <label 

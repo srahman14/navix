@@ -2,18 +2,34 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabaseClient'
+import { toast } from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
 
 const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: any) => {
     e.preventDefault()
-    setIsLoading(true)
-    // Simulate authentication
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    setIsLoading(false)
+    setIsLoading(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,   
+    });
+
+    if (error) {
+        toast.error(error.message);
+        setIsLoading(false);
+        return;
+    }
+
+    toast.success('Login successful! Redirecting...');
+    router.push('/navigation');
+    setIsLoading(false);
   }
 
   return (
@@ -105,7 +121,7 @@ const AuthPage = () => {
             </span>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             {/* Email field */}
             <div className="space-y-2">
               <label 
