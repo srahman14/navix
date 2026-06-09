@@ -4,9 +4,12 @@ import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import type { Order } from "@/types";
+import { useNavigationStore } from "@/store/navigation-store";
+import type { Vehicle } from "@/types";
 
 interface AddOrderModalProps {
   open: boolean;
+  vehicles: Vehicle[];
   onOpenChange: (open: boolean) => void;
   onSubmitOrder: (order: Order) => void;
 }
@@ -15,9 +18,9 @@ const generateOrderId = (): string => {
   const timestamp = Date.now();
   return `ORD-${timestamp.toString().slice(-6)}`;
 };
-
 export const AddOrderModal: React.FC<AddOrderModalProps> = ({
   open,
+  vehicles,
   onOpenChange,
   onSubmitOrder,
 }) => {
@@ -27,12 +30,14 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
     weight: number;
     latitude: string;
     longitude: string;
+    selectedVehicleId?: string;
   }>({
     id: "",
     priority: "low",
     weight: 0,
     latitude: "",
     longitude: "",
+    selectedVehicleId: "",
   });
 
   useEffect(() => {
@@ -43,11 +48,14 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
         weight: 0,
         latitude: "",
         longitude: "",
+        selectedVehicleId: "",
       });
     }
   }, [open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const addOrderToDB = useNavigationStore((state) => state.addOrderToDB);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const lat = parseFloat(formData.latitude);
@@ -63,12 +71,22 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
       return;
     }
 
-    onSubmitOrder({
+    const newOrder: Order = {
       id: formData.id,
       priority: formData.priority,
       weight: formData.weight,
       location: [lng, lat],
-    });
+      vehicle_id: formData.selectedVehicleId || "",
+    };
+
+    // onSubmitOrder(
+    //   id: formData.id,
+    //   priority: formData.priority,
+    //   weight: formData.weight,
+    //   location: [lng, lat],
+    // });
+
+  await addOrderToDB(newOrder);
 
     onOpenChange(false);
   };
@@ -137,6 +155,27 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, weight: parseFloat(e.target.value) || 0 })}
                 className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
               />
+            </div>
+
+            {/* Assign Vehicle - Optional */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Assign Vehicle (Optional)
+              </label>
+              <select
+                value={formData.selectedVehicleId}
+                onChange={(e) =>
+                  setFormData({ ...formData, selectedVehicleId: e.target.value })
+                }
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
+              >
+                <option value="">None</option>
+                {vehicles.map((vehicle: any) => (
+                  <option key={vehicle.id} value={vehicle.name}>
+                    {vehicle.name} - {vehicle.status}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Latitude Field */}

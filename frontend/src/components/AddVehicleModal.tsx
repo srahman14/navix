@@ -28,14 +28,18 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
   const [formData, setFormData] = useState<{
     id: string;
     status: "active" | "pending" | "idle";
+    type: "car" | "truck" | "van";
     load: number;
+    capacity: number;
     latitude: string;
     longitude: string;
     selectedOrderId?: string;
   }>({
     id: "",
     status: "idle",
+    type: "truck",
     load: 0,
+    capacity: 0,
     latitude: "",
     longitude: "",
     selectedOrderId: "",
@@ -48,6 +52,8 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
   const setEditingVehicleId = useNavigationStore((state) => state.setEditingVehicleId);
   const getVehicleById = useNavigationStore((state) => state.getVehicleById);
   const vehicleToEdit = (editingVehicleId != null) ? getVehicleById(editingVehicleId) : null; 
+  // For DB
+  const addVehicleToDB = useNavigationStore((state) => state.addVehicleToDB);
 
   useEffect(() => {
     if (open) {
@@ -55,7 +61,9 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
         setFormData({
           id: vehicleToEdit?.id,
           status: vehicleToEdit?.status,
+          type: vehicleToEdit?.type,
           load: vehicleToEdit?.load,
+          capacity: vehicleToEdit?.capacity,
           latitude: (vehicleToEdit?.startLocation[1]).toString(),
           longitude: (vehicleToEdit?.startLocation[0]).toString(),
           selectedOrderId: vehicleToEdit?.orderId,
@@ -67,7 +75,9 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
       setFormData({
         id: generateVehicleId(),
         status: "idle",
+        type: "truck",
         load: 0,
+        capacity: 0,
         latitude: "",
         longitude: "",
         selectedOrderId: "",
@@ -75,7 +85,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
     }
   }, [open, editMode, vehicleToEdit]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const lat = parseFloat(formData.latitude);
@@ -95,10 +105,12 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
     const newVehicle: Vehicle = {
       id: formData.id,
       status: formData.status,
-      orders: 0,
+      type: formData.type,
       load: formData.load,
+      // orders: 0,
+      capacity: formData.capacity,
       startLocation: [lng, lat],
-      orderId: formData.selectedOrderId || undefined,
+      // orderId: formData.selectedOrderId || undefined,
     };
 
     if (editMode && editingVehicleId != null) {
@@ -176,6 +188,27 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
               </select>
             </div>
 
+            {/* Type Field */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Type
+              </label>
+              <select
+                value={formData.type}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    type: e.target.value as "car" | "truck" | "van",
+                  })
+                }
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
+              >
+                <option value="car">Car</option>
+                <option value="truck">Truck</option>
+                <option value="van">Van</option>
+              </select>
+            </div>
+
             {/* Load Field */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -186,6 +219,20 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
                 placeholder="e.g., 500"
                 value={formData.load}
                 onChange={(e) => setFormData({ ...formData, load: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
+              />
+            </div>
+
+            {/* Capacity Field */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                Capacity
+              </label>
+              <input
+                type="number"
+                placeholder="e.g., 500"
+                value={formData.capacity}
+                onChange={(e) => setFormData({ ...formData, capacity: parseFloat(e.target.value) || 0 })}
                 className="w-full px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
               />
             </div>

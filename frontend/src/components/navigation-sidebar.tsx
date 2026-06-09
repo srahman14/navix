@@ -26,9 +26,11 @@ const NavigationSidebar: React.FC = () => {
   const updateOrder = useNavigationStore((state) => state.updateOrder);
   const editMode = useNavigationStore((state) => state.editingMode);
   const setEditMode = useNavigationStore((state) => state.setEditingMode);
+  const addVehicleToDB = useNavigationStore((state) => state.addVehicleToDB);
+  const addOrderToDB = useNavigationStore((state) => state.addOrderToDB);
 
-  const handleAddVehicle = (vehicle: Vehicle) => {
-    addVehicle(vehicle);
+  const handleAddVehicle = async (vehicle: Vehicle) => {
+    await addVehicleToDB(vehicle);
     closeModal();
   };
 
@@ -37,7 +39,8 @@ const NavigationSidebar: React.FC = () => {
     closeModal();  
   }
 
-  const handleAddOrder = (order: Order) => {
+  const handleAddOrder = async (order: Order) => {
+    await addOrderToDB(order);
     addOrder(order);
     closeModal();
   };
@@ -101,6 +104,7 @@ const NavigationSidebar: React.FC = () => {
           onOpenChange={(open) => {
             if (!open) closeModal();
           }}
+          vehicles={vehicles}
           onSubmitOrder={handleAddOrder}
         />
       )}
