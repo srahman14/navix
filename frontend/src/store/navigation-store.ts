@@ -2,6 +2,9 @@ import { create } from "zustand";
 import type { Vehicle, Order, RouteInfo } from "@/types";
 import toast from "react-hot-toast";
 import { getRoute } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
+import { createVehicle } from "../../services/vehicleService";
+import { createOrder } from "../../services/orderService";
 
 type RouteData = {
   geometry: {
@@ -18,9 +21,9 @@ type LocationData = {
   region: string;
   country: string;
   display_name: string;
-  road: string,
-  state: string,
-  postcode: string,
+  road: string;
+  state: string;
+  postcode: string;
   coordinates: {
     lat: number;
     lng: number;
@@ -31,7 +34,7 @@ type NavigationStore = {
   // Core
   vehicles: Vehicle[];
   orders: Order[];
-  
+
   // Currently selected
   selectedVehicle: Vehicle | null;
   selectedOrder: Order | null;
@@ -59,6 +62,9 @@ type NavigationStore = {
   // Vehicles
   setVehicles: (vehicles: Vehicle[]) => void;
   addVehicle: (vehicle: Vehicle) => void;
+  // For DB
+  // Add vehicle to DB
+  addVehicleToDB: (vehicle: Vehicle) => Promise<void>;
   setEditingVehicleId: (id: string | null) => void;
   setEditingMode: (editing: boolean) => void;
   deleteVehicle: (id: string) => void;
@@ -66,6 +72,8 @@ type NavigationStore = {
   // Orders
   setOrders: (orders: Order[]) => void;
   addOrder: (order: Order) => void;
+  // Add vehicle to DB
+  addOrderToDB: (order: Order) => Promise<void>;
   deleteOrder: (id: string) => void;
   updateOrder: (id: string, order: Order) => void;
   // Selection
@@ -73,7 +81,9 @@ type NavigationStore = {
   setSelectedOrder: (order: Order | null) => void;
 
   // Modal
-  openModal: (type: "vehicle" | "order" | "active-vehicles" | "active-orders") => void;
+  openModal: (
+    type: "vehicle" | "order" | "active-vehicles" | "active-orders",
+  ) => void;
   closeModal: () => void;
 
   setRoutes: (routes: RouteData[]) => void;
@@ -90,7 +100,11 @@ type NavigationStore = {
   getTotalOrders: () => number;
 
   // Route caching
-  fetchAndCacheRoute: (vehicleId: string, vehicle: Vehicle, order: Order) => Promise<void>;
+  fetchAndCacheRoute: (
+    vehicleId: string,
+    vehicle: Vehicle,
+    order: Order,
+  ) => Promise<void>;
   getCachedRoute: (vehicleId: string) => RouteData[] | null;
   clearRouteCache: (vehicleId: string) => void;
 
@@ -126,12 +140,37 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     try {
       set((state) => ({
         vehicles: [...state.vehicles, vehicle],
-      }))
+      }));
       toast.success("Added vehicle...");
     } catch (err) {
+      console.error("Error adding vehicle:", err);
       toast.error("Failed to add vehicle. Try again.");
     }
-    },
+  },
+
+  addVehicleToDB: async (vehicle) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast.error("Not authenticated");
+      return;
+    }
+
+    try {
+      const newVehicle = await createVehicle(vehicle, user.id);
+
+      set((state) => ({
+        vehicles: [...state.vehicles, newVehicle],
+      }));
+
+      toast.success("Vehicle saved to database");
+    } catch (err) {
+      toast.error("Failed to save vehicle");
+      throw err;
+    }
+  },
 
   setEditingVehicleId: (id) => set({ editingVehicleId: id }),
 
@@ -152,7 +191,10 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   updateVehicle: (id, updatedVehicle) => {
     set((state) => ({
       vehicles: state.vehicles.map((v) => (v.id === id ? updatedVehicle : v)),
-      selectedVehicle: state.selectedVehicle?.id === id ? updatedVehicle : state.selectedVehicle,
+      selectedVehicle:
+        state.selectedVehicle?.id === id
+          ? updatedVehicle
+          : state.selectedVehicle,
     }));
     toast.success("Vehicle updated");
   },
@@ -165,6 +207,28 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       orders: [...state.orders, order],
     })),
 
+  addOrderToDB: async (order) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+    
+    try {
+      const newOrder = await createOrder(order, user.id);
+
+      set((state) => ({
+        orders: [...state.orders, newOrder],
+      }));
+
+      toast.success("Order saved to database");
+    } catch (err) {
+      console.error("Error saving order:", err);
+      toast.error("Failed to save order");
+      throw err;
+    }
+  },
+
   deleteOrder: (id) =>
     set((state) => ({
       orders: state.orders.filter((o) => o.id !== id),
@@ -173,7 +237,8 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   updateOrder: (id, updatedOrder) =>
     set((state) => ({
       orders: state.orders.map((o) => (o.id === id ? updatedOrder : o)),
-      selectedOrder: state.selectedOrder?.id === id ? updatedOrder : state.selectedOrder,
+      selectedOrder:
+        state.selectedOrder?.id === id ? updatedOrder : state.selectedOrder,
     })),
 
   // Selection
@@ -199,7 +264,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     set({
       routes,
       // reset on new fetch
-      selectedRouteIndex: 0, 
+      selectedRouteIndex: 0,
     }),
 
   setSelectedRouteIndex: (index) => set({ selectedRouteIndex: index }),
