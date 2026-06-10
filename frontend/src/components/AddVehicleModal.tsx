@@ -47,7 +47,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
 
   const editMode = useNavigationStore((state) => state.editingMode);
   const setEditingMode = useNavigationStore((state) => state.setEditingMode);
-  const updatedVehicle = useNavigationStore((state) => state.updateVehicle);
+  const updateVehicle = useNavigationStore((state) => state.updateVehicle);
   const editingVehicleId = useNavigationStore((state) => state.editingVehicleId);
   const setEditingVehicleId = useNavigationStore((state) => state.setEditingVehicleId);
   const getVehicleById = useNavigationStore((state) => state.getVehicleById);
@@ -114,23 +114,12 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
     };
 
     if (editMode && editingVehicleId != null) {
-      updatedVehicle(editingVehicleId, newVehicle)
+      updateVehicle(newVehicle)
       setEditingMode(false);
       setEditingVehicleId(null);
       onOpenChange(false);
     } else {
       onSubmitVehicle(newVehicle);
-    }
-
-
-
-    // Pre-fetch and cache route if vehicle has a valid order
-    if (formData.selectedOrderId) {
-      const selectedOrder = orders.find((o) => o.id === formData.selectedOrderId);
-      if (selectedOrder) {
-        const { fetchAndCacheRoute } = useNavigationStore.getState();
-        fetchAndCacheRoute(newVehicle.id, newVehicle, selectedOrder);
-      }
     }
 
     onOpenChange(false);
@@ -238,7 +227,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
             </div>
 
             {/* Assign Order - Optional */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Assign Order (Optional)
               </label>
@@ -256,7 +245,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
                   </option>
                 ))}
               </select>
-            </div>
+            </div> */}
 
             {/* Latitude Field */}
             <div className="space-y-2">
@@ -306,7 +295,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
                 type="submit"
                 className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
               >
-                Add Vehicle
+                {editMode ? "Edit Vehicle" : "Add Vehicle"}
               </button>
             </div>
           </form>

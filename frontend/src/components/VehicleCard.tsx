@@ -73,10 +73,10 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({
       </div>
 
       {/* Orders Info */}
-      <div className="mt-3 text-xs text-zinc-600 dark:text-zinc-400">
+      {/* <div className="mt-3 text-xs text-zinc-600 dark:text-zinc-400">
         <p>Orders: {vehicle.orders}</p>
         {vehicle.orderId && <p>Order: {vehicle.orderId}</p>}
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -28,6 +28,11 @@ const NavigationSidebar: React.FC = () => {
   const setEditMode = useNavigationStore((state) => state.setEditingMode);
   const addVehicleToDB = useNavigationStore((state) => state.addVehicleToDB);
   const addOrderToDB = useNavigationStore((state) => state.addOrderToDB);
+  const routeCache = useNavigationStore((state) => state.routeCache);
+
+  console.log("route caches", {
+    routeCache
+  })
 
   const handleAddVehicle = async (vehicle: Vehicle) => {
     await addVehicleToDB(vehicle);
@@ -35,16 +40,16 @@ const NavigationSidebar: React.FC = () => {
   };
 
   const handleUpdateVehicle = (vehicle: Vehicle) => {
-    updateVehicle(vehicle.id, vehicle);
+    updateVehicle(vehicle);
     closeModal();  
   }
 
   const handleAddOrder = async (order: Order) => {
     await addOrderToDB(order);
-    addOrder(order);
     closeModal();
   };
 
+  console.log(vehicles)
   return (
     <>
       <motion.div

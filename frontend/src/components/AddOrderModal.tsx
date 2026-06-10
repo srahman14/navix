@@ -6,6 +6,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import type { Order } from "@/types";
 import { useNavigationStore } from "@/store/navigation-store";
 import type { Vehicle } from "@/types";
+import { mapVehicleFromDB } from "@/lib/mapper";
 
 interface AddOrderModalProps {
   open: boolean;
@@ -55,6 +56,8 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
 
   const addOrderToDB = useNavigationStore((state) => state.addOrderToDB);
 
+  console.log(formData.selectedVehicleId)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -76,18 +79,26 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
       priority: formData.priority,
       weight: formData.weight,
       location: [lng, lat],
-      vehicle_id: formData.selectedVehicleId || "",
+      vehicle_id: formData.selectedVehicleId || null,
     };
 
-    // onSubmitOrder(
-    //   id: formData.id,
-    //   priority: formData.priority,
-    //   weight: formData.weight,
-    //   location: [lng, lat],
-    // });
+    console.log("Creating order", newOrder);
 
-  await addOrderToDB(newOrder);
-
+    // TODO - add editing to Orders
+    await addOrderToDB(newOrder);
+    // Pre-fetch and cache route if vehicle has a valid order
+    if (formData.selectedVehicleId) {
+      const selectedVehicle = vehicles.find((v) => v.db_id === formData.selectedVehicleId);
+      if (selectedVehicle && newOrder.vehicle_id) {
+        console.log("Caching the route from Order Modal", {
+          selectedVehicle,
+          newOrder
+        })
+        const { fetchAndCacheRoute } = useNavigationStore.getState();
+        
+        fetchAndCacheRoute(newOrder.id, selectedVehicle, newOrder);
+      }
+    }
     onOpenChange(false);
   };
 
@@ -171,8 +182,8 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
               >
                 <option value="">None</option>
                 {vehicles.map((vehicle: any) => (
-                  <option key={vehicle.id} value={vehicle.name}>
-                    {vehicle.name} - {vehicle.status}
+                  <option key={vehicle.db_id} value={vehicle.db_id}>
+                    {vehicle.id} - {vehicle.status}
                   </option>
                 ))}
               </select>

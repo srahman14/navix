@@ -6,27 +6,41 @@ import toast from "react-hot-toast";
 import { decodePolyline } from "@/lib/polyline";
 import { distance } from "framer-motion";
 import { routeService } from "../services/routeService";
+import type { Order } from "@/types"
 
-export const useRoute = (selectedVehicle: any) => {
+export const useRoute = (selectedOrder: Order | null) => {
     const { 
-        getOrderById,
+        getVehicleById,
         getCachedRoute,
         setRoutes,
         setRouteInfo,
         setLoadingRoute,
         setRouteError,
         routeCache,
+        vehicles
     } = useNavigationStore();
 
     const [routeData, setRouteData] = useState<FeatureCollection<LineString> | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [routeInfo, setLocalRouteInfo] = useState<RouteInfo[]>([]);
-    
-    useEffect(() => {
-        if (!selectedVehicle) return;
 
-        const order = getOrderById(selectedVehicle.orderId);
-        if (!order) return;
+    // console.log("selectedOrder", selectedOrder);
+
+    useEffect(() => {
+        if (!selectedOrder || !selectedOrder.vehicle_id) {
+            toast.error("This order has no vehicle attached to it. Add a vehicle to see a route");
+            return;
+        };
+
+        const vehicle = vehicles.find(
+            (v) => v.db_id === selectedOrder.vehicle_id
+        )
+        if (!vehicle) return;
+
+        console.log("fetching for: ", {
+            selectedOrder,
+            vehicle
+        })            
 
         const loadRoute = async () => {
             try {
@@ -34,9 +48,12 @@ export const useRoute = (selectedVehicle: any) => {
                 setError(null)
                 setRouteError(null);
 
+                console.log("selectedOrder", selectedOrder);
+                console.log("vehicle_id", selectedOrder.vehicle_id);
+                console.log("routeCache", routeCache);
                 // Check if route is in cache first
-                const cachedRoutes = getCachedRoute(selectedVehicle.id);
-
+                const cachedRoutes = getCachedRoute(selectedOrder.id);
+                
                 if (cachedRoutes?.length) {
                     toast.success("Fetched route from cache");
 
@@ -75,8 +92,8 @@ export const useRoute = (selectedVehicle: any) => {
 
                 // Fetch routes from API
                 const response = await routeService.fetchRoute(
-                    selectedVehicle.startLocation,
-                    order.location
+                    vehicle.startLocation,
+                    selectedOrder.location
                 );
 
                 if (!response?.routes?.length) return;
@@ -126,7 +143,7 @@ export const useRoute = (selectedVehicle: any) => {
         };
 
         loadRoute();
-    }, [selectedVehicle]);
+    }, [selectedOrder]);
 
     return {
         routeData,

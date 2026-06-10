@@ -43,7 +43,7 @@ export const VehiclesSection: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-2">
-          {vehicles.map((vehicle) => (
+          {vehicles.map((vehicle: Vehicle) => (
             <div
               key={vehicle.id}
               className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
@@ -77,7 +77,8 @@ export const VehiclesSection: React.FC = () => {
               </div>
               <div className="flex flex-col items-start justify-start text-xs text-zinc-600 dark:text-zinc-400 mb-3 mt-2">
                 <span>Related order/s: {vehicle.orderId ? vehicle.orderId : "No Order"}</span>
-                <span>Orders: {vehicle.orders}</span>
+                {/* <span>Orders: {vehicle.orders}</span> */}
+                <span>Coordinates (lat, lng): {vehicle.startLocation[1]}, {vehicle.startLocation[0]}</span>
                 <span>Load: {vehicle.load} kg / {Math.floor(vehicle.load * 2.20462)} lbs</span>
               </div>
               <div className="w-full h-2 bg-zinc-300 dark:bg-zinc-700 rounded-full overflow-hidden">
