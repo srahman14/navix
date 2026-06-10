@@ -24,31 +24,40 @@ export const RouteInfo: React.FC = () => {
   const loading = useNavigationStore((state) => state.isLoadingRoute);
   const errorMessage = useNavigationStore((state) => state.routeError);
   const getOrderById = useNavigationStore((state) => state.getOrderById);
+  const vehicles = useNavigationStore((state) => state.vehicles);
   const getCachedLocation = useNavigationStore(
     (state) => state.getCachedLocation,
   );
   const setCachedLocation = useNavigationStore(
     (state) => state.setCachedLocation,
   );
-  const selectedVehicle = useNavigationStore((state) => state.selectedVehicle);
-  const vehicleOrder = getOrderById(selectedVehicle?.orderId);
+  const selectedOrder = useNavigationStore((state) => state.selectedOrder)
   const [startLocation, setStartLocation] = useState("");
   const [endLocation, setEndLocation] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
+  const vehicle = vehicles.find((v) => v.db_id === selectedOrder?.vehicle_id)
 
   useEffect(() => {
-    if (!selectedVehicle?.startLocation || !vehicleOrder?.location) {
+    if (!selectedOrder?.vehicle_id || !selectedOrder?.location) {
+
+      console.log("Selected Vehicle/Order was null")
+
       setStartLocation("");
       setEndLocation("");
       return;
     }
 
+    
     // Create cache key from vehicle ID and order ID
-    const cacheKey = `${selectedVehicle.id}-${vehicleOrder.id}`;
+    const cacheKey = `${selectedOrder.vehicle_id}-${selectedOrder.id}`;
 
     // Check if location is already cached
     const cachedLocation = getCachedLocation(cacheKey);
+    console.log(
+      "route location was cached",
+      {cacheKey: cachedLocation}
+    )
     if (cachedLocation && cachedLocation.length >= 2) {
       setStartLocation(
         cachedLocation[0].road +
@@ -78,8 +87,8 @@ export const RouteInfo: React.FC = () => {
     const handleFetchingLocation = async () => {
       try {
         const data = await getLocation([
-          selectedVehicle?.startLocation,
-          vehicleOrder?.location,
+          vehicle?.startLocation,
+          selectedOrder?.location,
         ]);
 
         if (data && Array.isArray(data) && data.length >= 2) {
@@ -117,11 +126,11 @@ export const RouteInfo: React.FC = () => {
       }
     };
     handleFetchingLocation();
-  }, [selectedVehicle, vehicleOrder, getCachedLocation, setCachedLocation]);
+  }, [vehicle, selectedOrder, getCachedLocation, setCachedLocation]);
 
       
   const handleCopy = () => {
-      const copyInfo = copyRouteInfo(selectedVehicle?.id, vehicleOrder?.id, startLocation, endLocation, routeInfo);
+      const copyInfo = copyRouteInfo(vehicle?.id, selectedOrder?.id, startLocation, endLocation, routeInfo);
       if (!copyInfo) return;
       
       setCopySuccess(true);
