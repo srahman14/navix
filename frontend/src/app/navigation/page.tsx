@@ -3,12 +3,47 @@
 import MapComponent from "@/components/map";
 import NavigationSidebar from "@/components/navigation-sidebar";
 import { RouteInfo } from "@/components/RouteInfo";
+import { supabase } from "@/lib/supabaseClient";
 import { useNavigationStore } from "@/store/navigation-store";
-import React from "react";
+import React, { useEffect } from "react";
+import { fetchVehicles } from "../../../services/vehicleService";
+import { fetchOrders } from "../../../services/orderService";
 
 const NavigationPage = () => {
   const vehicles = useNavigationStore((state) => state.vehicles);
   const orders = useNavigationStore((state) => state.orders);
+  const setVehicles = useNavigationStore((state) => state.setVehicles);
+  const setOrders = useNavigationStore((state) => state.setOrders);
+
+  useEffect(() => {
+    const load = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      const vehiclesFromDB = await fetchVehicles(user.id);
+
+      setVehicles(vehiclesFromDB);
+    };
+
+    load();
+  }, [setVehicles]);
+
+  useEffect(() => {
+    const load = async () => {
+      const {
+        data: { user } 
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const ordersFromDB = await fetchOrders(user.id);
+
+      setOrders(ordersFromDB);
+    }
+    load();
+  }, [setOrders])
 
   return (
     <main className="flex flex-col flex-1 items-center justify-center bg-zinc-50 dark:bg-black font-mono">

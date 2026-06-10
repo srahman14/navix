@@ -44,11 +44,12 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
   }, [resolvedTheme])
   
   const {
-    selectedVehicle,
+    selectedOrder,
     isLoadingRoute,
   } = useNavigationStore();
   
-  const { routeData, error } = useRoute(selectedVehicle);
+  // todo: check selected order is not null
+  const { routeData, error } = useRoute(selectedOrder);
   const cacheRoute = useNavigationStore((state) => state.routeCache);
 
 
