@@ -1,3 +1,4 @@
+import { mapOrderFromDB } from "@/lib/mapper";
 import { supabase } from "@/lib/supabaseClient";
 import type { Order } from "@/types";
 
@@ -7,11 +8,12 @@ export const createOrder = async (order: Order, userId: string) => {
         .insert([
             {
                 user_id: userId,
+                name: order.id,
                 priority: order.priority,
                 weight: order.weight,
                 lat: order.location[1],
                 lng: order.location[0],
-                vehicle_id: null,
+                vehicle_id: order.vehicle_id,
             }
         ])
         .select()
@@ -21,3 +23,14 @@ export const createOrder = async (order: Order, userId: string) => {
 
     return data;
 };
+
+export const fetchOrders = async (userId: string) => {
+    const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("user_id", userId);
+
+    if (error) throw error;
+
+    return (data ?? []).map(mapOrderFromDB);
+}
