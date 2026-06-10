@@ -1,8 +1,12 @@
 export type VehicleStatus = "active" | "idle" | "pending";
 export type OrderPriority = "high" | "medium" | "low";
 
+// TODO: remove orderID from vehicle
 export interface Vehicle {
+  // id -> UI ID (TRUCK-123, VAN-065 etc. -> readable ID)
   id: string;
+  // db_id -> UUID generated in Supabase
+  db_id?: string;
   status: "active" | "pending" | "idle";
   type: "car" | "truck" | "van";
   // orders: number;
@@ -12,12 +16,14 @@ export interface Vehicle {
   orderId?: string;
 };
 
+// TODO: only allow orders to add vehicleIDs
 export interface Order {
   id: string;
+  // todo: add db_id -> UUID generated in Supabase
   priority: "high" | "medium" | "low";
   weight: number;
   location: [number, number];
-  vehicle_id: string;
+  vehicle_id: string | null;
 };
 
 export interface RouteInfo {
