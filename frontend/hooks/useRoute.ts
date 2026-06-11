@@ -28,7 +28,7 @@ export const useRoute = (selectedOrder: Order | null) => {
 
     useEffect(() => {
         if (!selectedOrder || !selectedOrder.vehicle_id) {
-            toast.error("This order has no vehicle attached to it. Add a vehicle to see a route");
+            // toast.error("This order has no vehicle attached to it. Add a vehicle to see a route");
             return;
         };
 

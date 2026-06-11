@@ -59,12 +59,21 @@ export const updateVehicleInDB = async (vehicle: Vehicle) => {
 };
 
 export const deleteVehicle = async (vehicleId: string) => {
-    const { error } = await supabase
+  // Unassign all orders linked to this vehicle first 
+  const { error: updateError } = await supabase
+    .from("orders")
+    .update({ vehicleId: null })
+    .eq("vehicle_id", vehicleId);
+
+  if (updateError) throw updateError;
+  
+  // Delete vehicle 
+  const { error: deleteError } = await supabase
         .from("vehicles")
         .delete()
         .eq("name", vehicleId);
     
-        if (error) throw error;
+        if (deleteError) throw deleteError;
     
         return vehicleId;
 };
