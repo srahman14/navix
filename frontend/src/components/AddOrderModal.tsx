@@ -55,8 +55,38 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
   }, [open]);
 
   const addOrderToDB = useNavigationStore((state) => state.addOrderToDB);
+  const editMode = useNavigationStore((state) => state.editingMode);
+  const setEditingMode = useNavigationStore((state) => state.setEditingMode);
+  const updateOrder = useNavigationStore((state) => state.updateOrder);
+  const editingOrderId = useNavigationStore((state) => state.editingOrderId);
+  const setEditingVehicleId = useNavigationStore((state) => state.setEditingVehicleId);
+  const getOrderById = useNavigationStore((state) => state.getOrderById);
+  const orderToEdit = (editingOrderId != null) ? getOrderById(editingOrderId) : null; 
 
-  console.log(formData.selectedVehicleId)
+    useEffect(() => {
+      if (open) {
+        if (editMode && orderToEdit) {
+          setFormData({
+            id: orderToEdit.id,
+            priority: orderToEdit.priority,
+            weight: orderToEdit.weight,
+            latitude: (orderToEdit.location[1]).toString(),
+            longitude: (orderToEdit.location[0]).toString(),
+            selectedVehicleId: orderToEdit?.vehicle_id ?? "",
+          })
+          return;
+        };
+  
+        setFormData({
+          id: generateOrderId(),
+          priority: "low",
+          weight: 0,
+          latitude: "",
+          longitude: "",
+          selectedVehicleId: "",
+        });
+      }
+    }, [open, editMode, orderToEdit]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +115,15 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
     console.log("Creating order", newOrder);
 
     // TODO - add editing to Orders
-    await addOrderToDB(newOrder);
+    if (editMode && editingOrderId != null) {
+      updateOrder(newOrder)
+      setEditingMode(false);
+      setEditingVehicleId(null);
+      onOpenChange(false);
+    } else {
+      onSubmitOrder(newOrder);
+    }
+
     // Pre-fetch and cache route if vehicle has a valid order
     if (formData.selectedVehicleId) {
       const selectedVehicle = vehicles.find((v) => v.db_id === formData.selectedVehicleId);
@@ -109,7 +147,7 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
         <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 rounded-lg">
           <div className="flex items-center justify-between">
             <Dialog.Title className="text-lg font-semibold text-zinc-900 dark:text-white">
-              Add Order
+              {editMode ? "Edit Order" : "Add Order"}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button className="rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 dark:ring-offset-zinc-950 dark:text-zinc-400">
@@ -237,7 +275,7 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
                 type="submit"
                 className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
               >
-                Add Order
+               {editMode ? "Edit Order" : "Add Order"}
               </button>
             </div>
           </form>

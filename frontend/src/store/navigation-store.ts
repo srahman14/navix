@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { getRoute } from "@/lib/api";
 import { supabase } from "@/lib/supabaseClient";
 import { createVehicle, deleteVehicle, updateVehicleInDB } from "../../services/vehicleService";
-import { createOrder } from "../../services/orderService";
+import { createOrder, deleteOrder, updateOrderInDB } from "../../services/orderService";
 import { mapOrderFromDB, mapVehicleFromDB } from "@/lib/mapper";
 
 type RouteData = {
@@ -73,10 +73,11 @@ type NavigationStore = {
   // Orders
   setOrders: (orders: Order[]) => void;
   addOrder: (order: Order) => void;
-  // Add vehicle to DB
+  setEditingOrderId: (id: string | null) => void;
   addOrderToDB: (order: Order) => Promise<void>;
   deleteOrder: (id: string) => void;
-  updateOrder: (id: string, order: Order) => void;
+  updateOrder: (order: Order) => void;
+
   // Selection
   setSelectedVehicle: (vehicle: Vehicle | null) => void;
   setSelectedOrder: (order: Order | null) => void;
@@ -157,7 +158,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     if (!user) {
       toast.error("Not authenticated");
       return;
-    }
+  }
 
     try {
       const dbVehicle = await createVehicle(vehicle, user.id);
@@ -182,16 +183,30 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
   setEditingVehicleId: (id) => set({ editingVehicleId: id }),
 
+  setEditingOrderId: (id) => set({ editingOrderId: id }),
+
   setEditingMode: (editing) => set({ editingMode: editing }),
 
   deleteVehicle: async (vehicleId) => {
     try {
+      // Call vehicle.service to delete vehicle in Supabase
       await deleteVehicle(vehicleId);
 
       set((state) => ({
         vehicles: state.vehicles.filter((v) => v.id !== vehicleId),
+
+        // clear selection safely
         selectedVehicle:
-          state.selectedVehicle?.id === vehicleId ? null : state.selectedVehicle,
+          state.selectedVehicle?.id === vehicleId 
+          ? null 
+          : state.selectedVehicle,
+
+          // Unassign orders locally 
+          orders: state.orders.map((o) => 
+            o.vehicle_id === vehicleId
+            ? { ...o, vehicleId: null }
+            : o
+        ),
       }));
       toast.success("Vehicle deleted");
     } catch (err) {
@@ -202,17 +217,21 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
   updateVehicle: async (vehicle: Vehicle) => {
     try {
+      // Update vehicle in Supabase using vehicle.service
       const updated = await updateVehicleInDB(vehicle);
 
       set((state) => ({
         vehicles: state.vehicles.map((v) =>
           v.id === updated.id ? updated : v
         ),
+
         selectedVehicle:
           state.selectedVehicle?.id === updated.id
             ? updated
             : state.selectedVehicle,
       }));
+
+      console.log("Vehicle updated -> route invalidation needed");
 
       toast.success("Vehicle updated");
     } catch (err) {
@@ -252,17 +271,55 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     }
   },
 
-  deleteOrder: (id) =>
-    set((state) => ({
-      orders: state.orders.filter((o) => o.id !== id),
-    })),
+  deleteOrder: async (orderId) => {
+    try {
+      await deleteOrder(orderId);
 
-  updateOrder: (id, updatedOrder) =>
-    set((state) => ({
-      orders: state.orders.map((o) => (o.id === id ? updatedOrder : o)),
-      selectedOrder:
-        state.selectedOrder?.id === id ? updatedOrder : state.selectedOrder,
-    })),
+      set((state) => ({
+        orders: state.orders.filter((v) => v.id !== orderId),
+        selectedOrder:
+          state.selectedOrder?.id === orderId ? null : state.selectedOrder,
+      }));
+
+      toast.success("Order deleted");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete Order");
+    }
+  },
+
+  updateOrder: async (order: Order) => {
+    try {
+      const prevOrder = get().orders.find((o) => o.id === order.id)
+      
+      // Update order in Supabase using order.service 
+      const updated = await updateOrderInDB(order);
+
+      set((state) => ({
+        orders: state.orders.map((o) =>
+          o.id === updated.id ? updated : o
+        ),
+
+        // clear selected order safely
+        selectedOrder:
+          state.selectedOrder?.id === updated.id
+            ? updated
+            : state.selectedOrder,
+      }));
+
+      // hook point 
+      const vehicleChanged = prevOrder?.vehicle_id !== updated.vehicle_id;
+
+      if (vehicleChanged) {
+        console.log("Vehicle assignment changed -> invalidate routes next step")
+      }
+
+      toast.success("Order updated");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update Order");
+    }
+  },
 
   // Selection
   setSelectedVehicle: (vehicle) => {
@@ -400,5 +457,30 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       }
       return { locationCache: {} };
     });
+  },
+
+  // Helpers
+  validateAssignment: (orderId: string, vehicleId: string | null) => {
+    const state = get();
+
+    if (vehicleId) {
+      const vehicleExists = state.vehicles.some(
+        (v) => v.id === vehicleId
+      );
+
+      if (!vehicleExists) {
+        console.warn("Invalid vehicle assignment blocked");
+        return false;
+      }
+    }
+
+    const orderExists = state.orders.some((o) => o.id === orderId);
+
+    if (!orderExists) {
+      console.warn("Invalid order update blocked");
+      return false;
+    }
+
+    return true;
   },
 }));

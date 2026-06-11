@@ -104,6 +104,10 @@ const ActiveOrdersModal: React.FC = () => {
   const modalType = useNavigationStore((state) => state.modalType);
   const orders = useNavigationStore((state) => state.orders);
   const closeModal = useNavigationStore((state) => state.closeModal);
+  const setEditingMode = useNavigationStore((state) => state.setEditingMode);
+  const setEditingOrderId = useNavigationStore((state) => state.setEditingOrderId);
+  const openmodal = useNavigationStore((state) => state.openModal);
+  
   const setSelectedOrder = useNavigationStore(
     (state) => state.setSelectedOrder
   );
@@ -117,10 +121,11 @@ const ActiveOrdersModal: React.FC = () => {
   );
 
   const handleSelectOrder = (order: Order) => {
-    setSelectedOrder(order);
-    // TODO: Open edit order modal in Phase 3
-  };
-
+      // setSelectedVehicle(vehicle);
+      setEditingMode(true);
+      setEditingOrderId(order.id)
+      openmodal("order")
+    };
   return (
     <Dialog.Root open={isOpen} onOpenChange={closeModal}>
       <Dialog.Portal>

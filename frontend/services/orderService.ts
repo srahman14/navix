@@ -34,3 +34,35 @@ export const fetchOrders = async (userId: string) => {
 
     return (data ?? []).map(mapOrderFromDB);
 }
+
+export const updateOrderInDB = async (order: Order) => {
+    const { data, error } = await supabase
+        .from("orders")
+        .update({
+                name: order.id,
+                priority: order.priority,
+                weight: order.weight,
+                lat: order.location[1],
+                lng: order.location[0],
+                vehicle_id: order.vehicle_id,
+        })
+        .eq("name", order.id)
+        .select()
+        .single();
+
+    if (error) throw error;
+
+    return mapOrderFromDB(data);
+}
+
+export const deleteOrder = async (orderId: string) => {
+    const { error } = await supabase
+        .from("orders")
+        .delete()
+        .eq("name", orderId);
+
+        if (error) throw error;
+
+        return orderId;
+}
+
