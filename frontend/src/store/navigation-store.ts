@@ -3,8 +3,16 @@ import type { Vehicle, Order, RouteInfo } from "@/types";
 import toast from "react-hot-toast";
 import { getRoute } from "@/lib/api";
 import { supabase } from "@/lib/supabaseClient";
-import { createVehicle, deleteVehicle, updateVehicleInDB } from "../../services/vehicleService";
-import { createOrder, deleteOrder, updateOrderInDB } from "../../services/orderService";
+import {
+  createVehicle,
+  deleteVehicle,
+  updateVehicleInDB,
+} from "../../services/vehicleService";
+import {
+  createOrder,
+  deleteOrder,
+  updateOrderInDB,
+} from "../../services/orderService";
 import { mapOrderFromDB, mapVehicleFromDB } from "@/lib/mapper";
 
 type RouteData = {
@@ -51,8 +59,13 @@ type NavigationStore = {
   routes: RouteData[];
   selectedRouteIndex: number;
   routeInfo: RouteInfo[] | null;
-  // Route Cache - Pre-computed routes stored by vehicleId
-  routeCache: { [orderId: string]: RouteData[] };
+  // Route Cache - vehicleId holds both orderHash and computed routes 
+  routeCache: {
+    [vehicleId: string]: {
+      orderHash: string;
+      routes: RouteData[];
+    };
+  };
   // Location Cache - Reverse geocoding results stored by location key
   locationCache: { [key: string]: LocationData[] };
   // UI State
@@ -102,13 +115,19 @@ type NavigationStore = {
   getTotalOrders: () => number;
 
   // Route caching
+  // vehicleDbId -> references vehicle
+  // orders -> references all orders
+  // orderHash -> hash of an order
   fetchAndCacheRoute: (
     vehicleDbId: string,
-    vehicle: Vehicle,
-    order: Order,
+    orders: Order[],
+    orderHash: string
   ) => Promise<void>;
-  getCachedRoute: (orderId: string | null) => RouteData[] | null;
-  clearRouteCache: (orderId: string) => void;
+  getCachedRoute: (vehicleId: string) => {
+    orderHash: string,
+    routes: RouteData[];
+  };
+  clearRouteCache: (vehicleId: string) => void;
 
   // Location caching
   setCachedLocation: (key: string, locations: LocationData[]) => void;
@@ -130,7 +149,13 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   routes: [],
   selectedRouteIndex: 0,
   routeInfo: null,
-  routeCache: {},
+  routeCache: {} as Record<
+    string,
+    {
+      orderHash: string;
+      routes: RouteData[];
+    }
+  >,
   locationCache: {},
   isLoadingRoute: false,
   routeError: null,
@@ -158,7 +183,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     if (!user) {
       toast.error("Not authenticated");
       return;
-  }
+    }
 
     try {
       const dbVehicle = await createVehicle(vehicle, user.id);
@@ -169,7 +194,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
           ...state.vehicles,
           {
             ...mappedVehicle,
-            db_id: dbVehicle.id, 
+            db_id: dbVehicle.id,
           },
         ],
       }));
@@ -197,15 +222,13 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
         // clear selection safely
         selectedVehicle:
-          state.selectedVehicle?.id === vehicleId 
-          ? null 
-          : state.selectedVehicle,
+          state.selectedVehicle?.id === vehicleId
+            ? null
+            : state.selectedVehicle,
 
-          // Unassign orders locally 
-          orders: state.orders.map((o) => 
-            o.vehicle_id === vehicleId
-            ? { ...o, vehicleId: null }
-            : o
+        // Unassign orders locally
+        orders: state.orders.map((o) =>
+          o.vehicle_id === vehicleId ? { ...o, vehicleId: null } : o,
         ),
       }));
       toast.success("Vehicle deleted");
@@ -222,7 +245,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
       set((state) => ({
         vehicles: state.vehicles.map((v) =>
-          v.id === updated.id ? updated : v
+          v.id === updated.id ? updated : v,
         ),
 
         selectedVehicle:
@@ -254,7 +277,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     } = await supabase.auth.getUser();
 
     if (!user) return;
-    
+
     try {
       const dbOrder = await createOrder(order, user.id);
       const mappedOrder = mapOrderFromDB(dbOrder);
@@ -290,15 +313,13 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
   updateOrder: async (order: Order) => {
     try {
-      const prevOrder = get().orders.find((o) => o.id === order.id)
-      
-      // Update order in Supabase using order.service 
+      const prevOrder = get().orders.find((o) => o.id === order.id);
+
+      // Update order in Supabase using order.service
       const updated = await updateOrderInDB(order);
 
       set((state) => ({
-        orders: state.orders.map((o) =>
-          o.id === updated.id ? updated : o
-        ),
+        orders: state.orders.map((o) => (o.id === updated.id ? updated : o)),
 
         // clear selected order safely
         selectedOrder:
@@ -307,11 +328,13 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
             : state.selectedOrder,
       }));
 
-      // hook point 
+      // hook point
       const vehicleChanged = prevOrder?.vehicle_id !== updated.vehicle_id;
 
       if (vehicleChanged) {
-        console.log("Vehicle assignment changed -> invalidate routes next step")
+        console.log(
+          "Vehicle assignment changed -> invalidate routes next step",
+        );
       }
 
       toast.success("Order updated");
@@ -323,12 +346,12 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
   // Selection
   setSelectedVehicle: (vehicle) => {
-    set({ selectedVehicle: vehicle })
+    set({ selectedVehicle: vehicle });
   },
 
   setSelectedOrder: (order) => {
-     set({ selectedOrder: order })
-     console.log({order})
+    set({ selectedOrder: order });
+    console.log({ order });
   },
 
   // Modal
@@ -379,29 +402,52 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   },
 
   // Route caching
-  fetchAndCacheRoute: async (orderId, vehicle, order) => {
+  fetchAndCacheRoute: async (vehicleId, orders, orderHash) => {
     try {
       set({ isLoadingRoute: true, routeError: null });
 
-      // Build coordinates array: [vehicle start location, order location]
-      const coordinates = [vehicle.startLocation, order.location];
+      const state = get();
+
+      // Check if vehicleId is already in cache
+      const cached = state.routeCache[vehicleId];
+
+      // Return cache if route unchanged
+      if (cached?.orderHash === orderHash) {
+        set({ isLoadingRoute: false});
+        return;
+      } 
+
+      // Get vehicle from vehicleId
+      const vehicle = state.vehicles.find(v => v.id === vehicleId);
+      if (!vehicle) throw new Error("Vehicle not found");
+
+
+      // Build coordiantes (vehicle + all orders)
+      const coordinates = [
+        vehicle.startLocation,
+        ...orders.map(o => o.location),
+      ];
 
       // Fetch routes from API
       const routeData = await getRoute(coordinates);
 
       // Cache the routes by vehicle ID
+
       set((state) => ({
         routeCache: {
           ...state.routeCache,
-          [orderId]: routeData.routes || [],
+          [vehicleId]: {
+            orderHash,
+            routes: routeData.routes || [],
+          },
         },
         isLoadingRoute: false,
       }));
 
-      toast.success("Route cached for vehicle");
+      toast.success("Route cached");
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to fh route";
+        error instanceof Error ? error.message : "Failed to fetch route";
       set({
         routeError: errorMessage,
         isLoadingRoute: false,
@@ -410,24 +456,19 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     }
   },
 
-  // update type
-  getCachedRoute: (orderId: any) => {
+  getCachedRoute: (vehicleId: string) => {
     // Validate that the selected vehicle has an order attached
     const state = get();
 
-    console.log(
-      "Cache lookup",
-      orderId,
-      state.routeCache[orderId]
-    )    
+    // console.log("Cache lookup", vehicleId, state.routeCache[vehicleId]);
 
-      // Return cached routes for this vehicle, or null if not found
-    return state.routeCache[orderId] || null;
+    // Return cached routes for this vehicle, or null if not found
+    return state.routeCache[vehicleId] || null;
   },
 
-  clearRouteCache: (orderId) => {
+  clearRouteCache: (vehicleId) => {
     set((state) => {
-      const { [orderId]: _, ...remainingCache } = state.routeCache;
+      const { [vehicleId]: _, ...remainingCache } = state.routeCache;
       return {
         routeCache: remainingCache,
       };
@@ -464,9 +505,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     const state = get();
 
     if (vehicleId) {
-      const vehicleExists = state.vehicles.some(
-        (v) => v.id === vehicleId
-      );
+      const vehicleExists = state.vehicles.some((v) => v.id === vehicleId);
 
       if (!vehicleExists) {
         console.warn("Invalid vehicle assignment blocked");
@@ -482,5 +521,12 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     }
 
     return true;
+  },
+
+  generateOrderHash: (orders: Order[]) => {
+    return orders
+      .map(o => `${o.id}-${o.location.join(",")}-${o.weight}-${o.vehicle_id}`)
+      .sort()
+      .join("|");
   },
 }));

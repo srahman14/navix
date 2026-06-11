@@ -26,7 +26,6 @@ const ActiveVehiclesModal: React.FC = () => {
 
   const handleSelectVehicle = (vehicle: Vehicle) => {
     // setSelectedVehicle(vehicle);
-    // TODO: Open edit vehicle modal in Phase 3
     editingMode(true);
     setEditingVehicleId(vehicle.id)
     openmodal("vehicle")
