@@ -133,6 +133,13 @@ type NavigationStore = {
   setCachedLocation: (key: string, locations: LocationData[]) => void;
   getCachedLocation: (key: string) => LocationData[] | null;
   clearLocationCache: (key?: string) => void;
+
+  // Route Invalidation Helpers
+  invalidateVehicleRoute: (vehileId: string) => void;
+  invalidateOrderRoutes: (
+    oldVehicleId: string | null,
+    newVehicleId: string | null,
+  ) => void;
 };
 
 export const useNavigationStore = create<NavigationStore>((set, get) => ({
@@ -498,6 +505,31 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       }
       return { locationCache: {} };
     });
+  },
+
+  invalidateVehicleRoute: (vehicleId: string) => {
+    set((state) => {
+      const { [vehicleId]: _, ...remainingCache } = state.routeCache;
+
+      return {
+        routeCache: remainingCache,
+      };
+    });
+
+    console.log(`Invalidated route cache for vehicle ${vehicleId}`);
+    toast.success(`Route cache removed for vehicle ${vehicleId}`)
+  },
+
+  invalidateOrderRoutes: (oldVehicleId, newVehicleId) => {
+    const { invalidateVehicleRoute } = get();
+
+    if (oldVehicleId) {
+      invalidateVehicleRoute(oldVehicleId);
+    }
+
+    if (newVehicleId && newVehicleId !== oldVehicleId) {
+      invalidateVehicleRoute(newVehicleId);
+    }
   },
 
   // Helpers
