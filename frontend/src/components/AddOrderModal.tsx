@@ -62,6 +62,7 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
   const setEditingVehicleId = useNavigationStore((state) => state.setEditingVehicleId);
   const getOrderById = useNavigationStore((state) => state.getOrderById);
   const orderToEdit = (editingOrderId != null) ? getOrderById(editingOrderId) : null; 
+  const orders = useNavigationStore((state) => state.orders);
 
     useEffect(() => {
       if (open) {
@@ -125,19 +126,19 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
     }
 
     // Pre-fetch and cache route if vehicle has a valid order
-    if (formData.selectedVehicleId) {
-      const selectedVehicle = vehicles.find((v) => v.db_id === formData.selectedVehicleId);
-      if (selectedVehicle && newOrder.vehicle_id) {
-        console.log("Caching the route from Order Modal", {
-          selectedVehicle,
-          newOrder
-        })
-        const { fetchAndCacheRoute } = useNavigationStore.getState();
+    // if (formData.selectedVehicleId) {
+    //   const selectedVehicle = vehicles.find((v) => v.db_id === formData.selectedVehicleId);
+    //   if (selectedVehicle && newOrder.vehicle_id) {
+    //     console.log("Caching the route from Order Modal", {
+    //       selectedVehicle,
+    //       newOrder
+    //     })
+    //     const { fetchAndCacheRoute } = useNavigationStore.getState();
         
-        fetchAndCacheRoute(newOrder.id, selectedVehicle, newOrder);
-      }
-    }
-    onOpenChange(false);
+    //     fetchAndCacheRoute(newOrder.id, selectedVehicle, newOrder);
+    //   }
+    // }
+    // onOpenChange(false);
   };
 
   return (
