@@ -140,6 +140,28 @@ type NavigationStore = {
     oldVehicleId: string | null,
     newVehicleId: string | null,
   ) => void;
+
+  // Assigment methods
+  assignOrderToVehicle: (
+    orderId: string,
+    vehicleId: string,
+  ) => void;
+
+  unassignOrderFromVehicle: (
+    orderId: string 
+  ) => void;
+
+  reassignOrderToVehicle: (
+    orderId: string,
+    newVehicleId: string
+  ) => void;
+
+  assignOrdersToVehicle: (
+    orderIds: string[],
+    vehicleId: string
+  ) => void;
+
+  getOrdersForVehicle: (vehicleId: string) => Order[];
 };
 
 export const useNavigationStore = create<NavigationStore>((set, get) => ({
@@ -360,7 +382,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
             : state.selectedOrder,
       }));
 
-      // hook point
+      // Verify if vehicle or Location has changed
       const vehicleChanged = prevOrder?.vehicle_id !== updated.vehicle_id;
       const locationChanged =
         prevOrder?.location[0] !== updated.location[0] ||
@@ -562,7 +584,88 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     }
   },
 
-  // Helpers
+  // Assigment methods
+  assignOrderToVehicle: async (orderId: string, vehicleId: string) => {
+    // update order.vehicle_id
+    // persist in supabase
+    // update local state
+    // invalidate old + new vehilce routes
+    // trigger recompute hook 
+
+    try {
+      const state = get(); 
+
+      // Get order 
+      const order = state.orders.find((o) => o.id === orderId);
+      if (!order) throw new Error("Order not found");
+
+      // Get old vehicle (assigned to order) - used to invalidate old route
+      const prevVehicled = order.vehicle_id;
+
+      // Update DB -> assigning new vehicle to order
+      const updated = await updateOrderInDB({
+        ...order,
+        vehicle_id: vehicleId
+      });
+
+      // Update local state 
+      set((state) => ({
+        orders: state.orders.map((o) => 
+          o.id === updated.id ? updated : o
+        ),
+      }));
+
+      // Invalidate affected routes
+      get().invalidateOrderRoutes(
+        prevVehicled,
+        vehicleId
+      );
+
+      // Recompute route for new vehicle
+      const newVehicleOrders = get().getOrdersForVehicle(vehicleId);
+      const vehicle = state.vehicles.find((v) => v.id === vehicleId);
+
+      if (vehicle) {
+        const orderHash = newVehicleOrders
+          .map((o) => o.id)
+          .join("|")
+
+        await get().fetchAndCacheRoute(
+          vehicleId,
+          newVehicleOrders,
+          orderHash,
+        )
+      }
+
+      toast.success("Order assigned to vehicle");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to assign order");
+    }
+  },
+
+  unassignOrderFromVehicle: (orderId) => {
+    // set order.vehicle_id to null
+    // update database
+    // invalidate previous vehilce route 
+    // recompute if need
+  },
+
+  reassignOrderToVehicle: (updateOrderInDB, newVehicleId) => {
+    // read previous vehicle
+    // assign new vehicle
+    // invalidate both vehicles
+    // trigger recompute for both 
+  },
+
+  assignOrdersToVehicle: (orderIds, vehicleId) => {
+    // batch update supabase
+    // update state in one pass
+    // invalidate vehicle once
+    // compute one route for whole batch 
+  },
+
+// Helpers
   validateAssignment: (orderId: string, vehicleId: string | null) => {
     const state = get();
 
@@ -591,4 +694,9 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       .sort()
       .join("|");
   },
+
+  getOrdersForVehicle: (vehicleId: string) => {
+    // assumes vehicle.db_id not vehicle.id 
+    return get().orders.filter((o) => o.vehicle_id === vehicleId)
+  }
 }));
