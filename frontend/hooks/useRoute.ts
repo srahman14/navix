@@ -54,10 +54,10 @@ export const useRoute = (selectedOrder: Order | null) => {
                 // Check if route is in cache first
                 const cachedRoutes = getCachedRoute(selectedOrder.id);
                 
-                if (cachedRoutes?.length) {
+                if (cachedRoutes?.routes.length) {
                     toast.success("Fetched route from cache");
 
-                    const first = cachedRoutes[0];
+                    const first = cachedRoutes.routes[0];
 
                     const coords = decodePolyline(first.geometry.encoded);
 
@@ -81,7 +81,7 @@ export const useRoute = (selectedOrder: Order | null) => {
                     setRouteData(geojson);
 
                     setRouteInfo(
-                        cachedRoutes.map((r) => ({
+                        cachedRoutes.routes.map((r) => ({
                         distance: r.summary.distance,
                         duration: r.summary.duration,
                         }))
