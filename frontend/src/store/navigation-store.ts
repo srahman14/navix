@@ -59,7 +59,7 @@ type NavigationStore = {
   routes: RouteData[];
   selectedRouteIndex: number;
   routeInfo: RouteInfo[] | null;
-  // Route Cache - vehicleId holds both orderHash and computed routes 
+  // Route Cache - vehicleId holds both orderHash and computed routes
   routeCache: {
     [vehicleId: string]: {
       orderHash: string;
@@ -121,10 +121,10 @@ type NavigationStore = {
   fetchAndCacheRoute: (
     vehicleDbId: string,
     orders: Order[],
-    orderHash: string
+    orderHash: string,
   ) => Promise<void>;
   getCachedRoute: (vehicleId: string) => {
-    orderHash: string,
+    orderHash: string;
     routes: RouteData[];
   };
   clearRouteCache: (vehicleId: string) => void;
@@ -133,6 +133,13 @@ type NavigationStore = {
   setCachedLocation: (key: string, locations: LocationData[]) => void;
   getCachedLocation: (key: string) => LocationData[] | null;
   clearLocationCache: (key?: string) => void;
+
+  // Route Invalidation Helpers
+  invalidateVehicleRoute: (vehileId: string) => void;
+  invalidateOrderRoutes: (
+    oldVehicleId: string | null,
+    newVehicleId: string | null,
+  ) => void;
 };
 
 export const useNavigationStore = create<NavigationStore>((set, get) => ({
@@ -228,9 +235,13 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
         // Unassign orders locally
         orders: state.orders.map((o) =>
-          o.vehicle_id === vehicleId ? { ...o, vehicleId: null } : o,
+          o.vehicle_id === vehicleId ? { ...o, vehicle_id: null } : o,
         ),
       }));
+
+      // Invalidate route for vehicle
+      get().invalidateVehicleRoute(vehicleId);
+
       toast.success("Vehicle deleted");
     } catch (err) {
       console.error(err);
@@ -253,6 +264,9 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
             ? updated
             : state.selectedVehicle,
       }));
+
+      // invalidate route for vehicle
+      get().invalidateVehicleRoute(updated.id);
 
       console.log("Vehicle updated -> route invalidation needed");
 
@@ -286,6 +300,11 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
         orders: [...state.orders, mappedOrder],
       }));
 
+      if (mappedOrder.vehicle_id) {
+        // invalidate route for vehicle that order is added to
+        get().invalidateVehicleRoute(mappedOrder.vehicle_id);
+      }
+
       toast.success("Order saved to database");
     } catch (err) {
       console.error("Error saving order:", err);
@@ -296,6 +315,8 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
   deleteOrder: async (orderId) => {
     try {
+      const order = get().orders.find((o) => o.id === orderId);
+
       await deleteOrder(orderId);
 
       set((state) => ({
@@ -303,6 +324,11 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
         selectedOrder:
           state.selectedOrder?.id === orderId ? null : state.selectedOrder,
       }));
+
+      if (order?.vehicle_id) {
+        // invalidate route for vehicle that order is deleted from
+        get().invalidateVehicleRoute(order.vehicle_id);
+      }
 
       toast.success("Order deleted");
     } catch (err) {
@@ -330,10 +356,16 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
       // hook point
       const vehicleChanged = prevOrder?.vehicle_id !== updated.vehicle_id;
-
-      if (vehicleChanged) {
-        console.log(
-          "Vehicle assignment changed -> invalidate routes next step",
+      const locationChanged =
+        prevOrder?.location[0] !== updated.location[0] ||
+        prevOrder?.location[1] !== updated.location[1];
+         
+      if (vehicleChanged || locationChanged) {
+        // invalidate route for vehicle if the vehicle has changed for the order
+        // or the order location has changed
+        get().invalidateOrderRoutes(
+          prevOrder?.vehicle_id ?? null,
+          updated.vehicle_id,
         );
       }
 
@@ -413,19 +445,18 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
       // Return cache if route unchanged
       if (cached?.orderHash === orderHash) {
-        set({ isLoadingRoute: false});
+        set({ isLoadingRoute: false });
         return;
-      } 
+      }
 
       // Get vehicle from vehicleId
-      const vehicle = state.vehicles.find(v => v.id === vehicleId);
+      const vehicle = state.vehicles.find((v) => v.id === vehicleId);
       if (!vehicle) throw new Error("Vehicle not found");
-
 
       // Build coordiantes (vehicle + all orders)
       const coordinates = [
         vehicle.startLocation,
-        ...orders.map(o => o.location),
+        ...orders.map((o) => o.location),
       ];
 
       // Fetch routes from API
@@ -500,6 +531,31 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     });
   },
 
+  invalidateVehicleRoute: (vehicleId: string) => {
+    set((state) => {
+      const { [vehicleId]: _, ...remainingCache } = state.routeCache;
+
+      return {
+        routeCache: remainingCache,
+      };
+    });
+
+    console.log(`Invalidated route cache for vehicle ${vehicleId}`);
+    toast.success(`Route cache removed for vehicle ${vehicleId}`);
+  },
+
+  invalidateOrderRoutes: (oldVehicleId, newVehicleId) => {
+    const { invalidateVehicleRoute } = get();
+
+    if (oldVehicleId) {
+      invalidateVehicleRoute(oldVehicleId);
+    }
+
+    if (newVehicleId && newVehicleId !== oldVehicleId) {
+      invalidateVehicleRoute(newVehicleId);
+    }
+  },
+
   // Helpers
   validateAssignment: (orderId: string, vehicleId: string | null) => {
     const state = get();
@@ -525,7 +581,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
   generateOrderHash: (orders: Order[]) => {
     return orders
-      .map(o => `${o.id}-${o.location.join(",")}-${o.weight}-${o.vehicle_id}`)
+      .map((o) => `${o.id}-${o.location.join(",")}-${o.weight}-${o.vehicle_id}`)
       .sort()
       .join("|");
   },
