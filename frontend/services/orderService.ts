@@ -46,7 +46,7 @@ export const updateOrderInDB = async (order: Order) => {
                 lng: order.location[0],
                 vehicle_id: order.vehicle_id,
         })
-        .eq("name", order.id)
+        .eq("id", order.db_id)
         .select()
         .single();
 
@@ -59,7 +59,7 @@ export const deleteOrder = async (orderId: string) => {
     const { error } = await supabase
         .from("orders")
         .delete()
-        .eq("name", orderId);
+        .eq("id", orderId);
 
         if (error) throw error;
 

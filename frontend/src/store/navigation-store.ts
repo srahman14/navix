@@ -225,11 +225,11 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       await deleteVehicle(vehicleId);
 
       set((state) => ({
-        vehicles: state.vehicles.filter((v) => v.id !== vehicleId),
+        vehicles: state.vehicles.filter((v) => v.db_id !== vehicleId),
 
         // clear selection safely
         selectedVehicle:
-          state.selectedVehicle?.id === vehicleId
+          state.selectedVehicle?.db_id === vehicleId
             ? null
             : state.selectedVehicle,
 
@@ -297,7 +297,13 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       const mappedOrder = mapOrderFromDB(dbOrder);
 
       set((state) => ({
-        orders: [...state.orders, mappedOrder],
+        orders: [
+          ...state.orders,
+          {
+            ...mappedOrder,
+            db_id: dbOrder.id,
+          },
+        ],
       }));
 
       if (mappedOrder.vehicle_id) {

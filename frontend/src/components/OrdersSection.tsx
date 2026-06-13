@@ -73,7 +73,8 @@ export const OrdersSection: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      deleteOrder(order.id);
+                      // asserting for now - refactor later
+                      deleteOrder(order.db_id!);
                     }}
                     className="text-zinc-500 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400 transition-colors"
                     title="Delete order"

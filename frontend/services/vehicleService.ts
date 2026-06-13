@@ -49,7 +49,7 @@ export const updateVehicleInDB = async (vehicle: Vehicle) => {
       start_lat: vehicle.startLocation[1],
       start_lng: vehicle.startLocation[0],
     })
-    .eq("name", vehicle.id)
+    .eq("id", vehicle.db_id)
     .select()
     .single();
 
@@ -62,7 +62,7 @@ export const deleteVehicle = async (vehicleId: string) => {
   // Unassign all orders linked to this vehicle first 
   const { error: updateError } = await supabase
     .from("orders")
-    .update({ vehicleId: null })
+    .update({ vehicle_id: null })
     .eq("vehicle_id", vehicleId);
 
   if (updateError) throw updateError;
@@ -71,7 +71,7 @@ export const deleteVehicle = async (vehicleId: string) => {
   const { error: deleteError } = await supabase
         .from("vehicles")
         .delete()
-        .eq("name", vehicleId);
+        .eq("id", vehicleId);
     
         if (deleteError) throw deleteError;
     

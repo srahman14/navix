@@ -11,6 +11,7 @@ export const VehiclesSection: React.FC = () => {
   const setSelectedVehicle = useNavigationStore(
     (state) => state.setSelectedVehicle
   );
+  // TODO: vehicle should disappear when deleted
   const deleteVehicle = useNavigationStore((state) => state.deleteVehicle);
   const openModal = useNavigationStore((state) => state.openModal);
 
@@ -66,7 +67,8 @@ export const VehiclesSection: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      deleteVehicle(vehicle.id);
+                      // asserting for now - refactor later
+                      deleteVehicle(vehicle.db_id!);
                     }}
                     className="text-zinc-500 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400 transition-colors"
                     title="Delete vehicle"
