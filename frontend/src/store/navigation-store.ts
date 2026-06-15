@@ -156,9 +156,8 @@ type NavigationStore = {
     newVehicleId: string
   ) => void;
 
-  assignOrdersToVehicle: (
-    orderIds: string[],
-    vehicleId: string
+  autoAssignOrderToVehicle: (
+    orderIds: string,
   ) => void;
 
   getOrdersForVehicle: (vehicleId: string) => Order[];
@@ -644,29 +643,106 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     }
   },
 
-  unassignOrderFromVehicle: (orderId) => {
+  unassignOrderFromVehicle: async (orderId) => {
     // set order.vehicle_id to null
     // update database
     // invalidate previous vehilce route 
     // recompute if need
+
+    try {
+      const state = get();
+
+      const order = state.orders.find((o) => o.id === orderId);
+      if (!order) throw new Error("Order not found");
+      
+      const prevVehicleId = order.vehicle_id;
+
+      if (!prevVehicleId) return;
+
+      // Update Order in DB 
+      const updated = await updateOrderInDB({
+        ...order,
+        vehicle_id: null,
+      });
+
+      // Update state 
+      set((state) => ({
+        orders: state.orders.map((o) => 
+          o.id === updated.id ? updated : o
+        ),
+      }));
+
+      // Invalidate old vehicle route 
+      get().invalidateVehicleRoute(prevVehicleId);
+
+      // Recompute old vehicle route 
+      const oldOrders = get().getOrdersForVehicle(prevVehicleId);
+      const vehicle = state.vehicles.find((v) => v.id === prevVehicleId);
+
+      if (vehicle) {
+        const orderHash = oldOrders.map((o) => o.id).join("|");
+
+        await get().fetchAndCacheRoute(
+          prevVehicleId,
+          oldOrders,
+          orderHash
+        );
+      }
+
+      toast.success("Order unassigned");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to unassign order");
+    }
   },
 
-  reassignOrderToVehicle: (updateOrderInDB, newVehicleId) => {
+  reassignOrderToVehicle: (orderId, newVehicleId) => {
     // read previous vehicle
     // assign new vehicle
     // invalidate both vehicles
     // trigger recompute for both 
+    get().assignOrderToVehicle(orderId, newVehicleId);
   },
 
-  assignOrdersToVehicle: (orderIds, vehicleId) => {
-    // batch update supabase
-    // update state in one pass
-    // invalidate vehicle once
-    // compute one route for whole batch 
+  // auto assigns one order to a vehicle 
+  autoAssignOrderToVehicle: (orderId) => {
+    // todo: 
+    // - batch update supabase
+    // - update state in one pass
+    // - invalidate vehicle once
+    // - compute one route for whole batch 
+
+    // currently - just choose vehicle with the least number of orders
+    try { 
+      const state = get();
+
+      const vehicles = state.vehicles;
+
+      if (vehicles.length === 0) {
+        throw new Error("No vehicles available");
+      }
+
+      // pick lesat loaded vehicle
+      const sorted = [...vehicles].sort(
+        (a, b) => 
+          get().getOrdersForVehicle(a.id).length - 
+        get().getOrdersForVehicle(b.id).length
+      );
+
+      const targetVehicle = sorted[0];
+
+      get().assignOrderToVehicle(
+        orderId,
+        targetVehicle.id
+      )
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to auto-assign order")
+    }
   },
 
 // Helpers
-  validateAssignment: (orderId: string, vehicleId: string | null) => {
+validateAssignment: (orderId: string, vehicleId: string | null) => {
     const state = get();
 
     if (vehicleId) {
