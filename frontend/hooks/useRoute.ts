@@ -73,7 +73,7 @@ export const useRoute = (selectedOrder: Order | null) => {
           cachedRoutes = getCachedRoute(selectedOrder.vehicle_id!);
         }
 
-        if (!cachedRoutes || cachedRoutes.routes.length) {
+        if (!cachedRoutes || !cachedRoutes.routes.length) {
           throw new Error("No cached routes found");
         }
 
