@@ -20,25 +20,38 @@ export const fetchFromORS = async (profile = "driving-car", coordinates) => {
 
     const url = ORS_PROFILES[profile];
 
+    // Default - takes a list of coordinates
+    const body = {
+        coordinates,
+        elevation: false,
+    }
+
+    // Return alternative routes given when given only two coordinates 
+    if (coordinates.length === 2) {
+        body.alternative_routes = {
+            target_count: 3,
+            weight_factor: 1.4,
+            share_factor: 0.6,
+        }
+    }
+
+    // Debugging
+    console.log("ORS request coords:", coordinates);
+    console.log("Waypoint count:", coordinates.length);
+
     const response = await fetch(url, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             "Authorization": ENV_VARS.ORS_API_KEY, 
         },
-        body: JSON.stringify({
-            coordinates: coordinates,
-            alternative_routes: {
-                target_count: 3,
-                weight_factor: 1.4,
-                share_factor: 0.6,
-            },
-            elevation: false
-        }),
+        body: JSON.stringify(body),
     });
 
     if (!response.ok) {
-        throw new Error("Failed to fetch data from OSR " + response.statusText);
+        const errorText = await response.text();
+        console.error(errorText);
+        throw new Error(`Failed to fetch data from ORS ${errorText}`); 
     }
 
     const data = await response.json();

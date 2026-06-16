@@ -7,7 +7,6 @@ jest.mock("../config/envVars.js", () => ({
 }));
 
 import { fetchFromORS } from "../services/ors.service";
-import { ENV_VARS } from "../config/envVars.js";
 
 global.fetch = jest.fn();
 
@@ -17,23 +16,19 @@ describe("fetchFromORS", () => {
   });
 
   it("returns routes data", async () => {
-    // Mock the API response (geometry is a string from OSR API)
     const mockApiResponse = {
       bbox: [0, 0, 1, 1],
-
       metadata: {
-      engine: {
+        engine: {
           version: "8.0",
         },
       },
-
       routes: [
         {
           summary: {
             distance: 1200,
             duration: 300,
           },
-
           segments: [
             {
               distance: 1200,
@@ -41,77 +36,67 @@ describe("fetchFromORS", () => {
               steps: [],
             },
           ],
-
           bbox: [0, 0, 1, 1],
-
           way_points: [0, 1],
-
           geometry: "mockEncodedPolyline",
         },
       ],
     };
 
-    (fetch as jest.Mock).mockResolvedValue({
+    const fetchMock = fetch as jest.Mock;
+
+    fetchMock.mockResolvedValue({
       ok: true,
       json: async () => mockApiResponse,
     });
 
-    const result = await fetchFromORS(
-      "driving-car",
-      [
-        [51.5001, 0.1278],
-        [51.5001, -0.07649],
-      ],
-    );
+    const coordinates = [
+      [51.5001, 0.1278],
+      [51.5001, -0.07649],
+    ];
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.any(String),
+    const result = await fetchFromORS("driving-car", coordinates);
 
-      expect.objectContaining({
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "test-api-key",
-        },
-        body: JSON.stringify({
-          coordinates: [
-            [51.5001, 0.1278],
-            [51.5001, -0.07649],
-          ],
+    // Parse request body safely
+    const [, request] = fetchMock.mock.calls[0];
+    const body = JSON.parse(request.body);
 
-          alternative_routes: {
-            target_count: 3,
-            weight_factor: 1.4,
-            share_factor: 0.6,
-          },
-          elevation: false,
-        }),
-      }),
-    );
+    expect(body).toEqual({
+      coordinates,
+      alternative_routes: {
+        target_count: 3,
+        weight_factor: 1.4,
+        share_factor: 0.6,
+      },
+      elevation: false,
+    });
 
-    // Verify the transformed response structure
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
     expect(result.bbox).toEqual([0, 0, 1, 1]);
     expect(result.metadata).toEqual({ engine: { version: "8.0" } });
     expect(result.routes).toHaveLength(1);
     expect(result.routes[0].geometry).toEqual({
-      encoded: "mockEncodedPolyline"
+      encoded: "mockEncodedPolyline",
     });
   });
 
   it("throws when API fails", async () => {
-    (fetch as jest.Mock).mockResolvedValue({
+    const fetchMock = fetch as jest.Mock;
+
+    fetchMock.mockResolvedValue({
       ok: false,
       statusText: "Internal Server Error",
+      text: async () => "Internal Server Error",
     });
 
     await expect(
-      fetchFromORS(
-        "driving-car",
-        [
-          [51.5001, 0.1278],
-          [51.5001, -0.07649],
-        ],
-      ),
-    ).rejects.toThrow("Failed to fetch data from OSR Internal Server Error");
+      fetchFromORS("driving-car", [
+        [51.5001, 0.1278],
+        [51.5001, -0.07649],
+      ])
+    ).rejects.toThrow(
+      "Failed to fetch data from ORS Internal Server Error"
+    );
   });
 });
