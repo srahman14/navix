@@ -124,10 +124,14 @@ type NavigationStore = {
     orders: Order[],
     orderHash: string,
   ) => Promise<void>;
-  getCachedRoute: (vehicleId: string) => {
-    orderHash: string;
-    routes: RouteData[];
-  };
+    getCachedRoute: (
+      vehicleId: string
+    ) =>
+      | {
+          orderHash: string;
+          routes: RouteData[];
+        }
+      | null;
   clearRouteCache: (vehicleId: string) => void;
 
   // Location caching

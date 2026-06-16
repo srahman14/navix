@@ -160,9 +160,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
   
   return (
     <div className="w-full h-screen">
-      {error && !isLoadingRoute && (
+      {/* {error && !isLoadingRoute && (
         toast.error(error)
-      )}
+      )} */}
       <Map
         {...viewState}
         ref={mapRef}
