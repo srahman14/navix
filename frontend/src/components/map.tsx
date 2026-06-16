@@ -1,17 +1,15 @@
 "use client";
 
-import React, { useRef, useMemo, useState, useEffect } from "react";
-import Map, { Source, Layer } from "@vis.gl/react-maplibre";
+import { MAP_ICONS, registerMapIcons, reloadMapIcons } from "@/lib/map-icons";
+import { useNavigationStore } from "@/store/navigation-store";
+import type { Order, Vehicle } from "@/types";
 import type { MapRef } from "@vis.gl/react-maplibre";
-import type { FeatureCollection, Point, LineString } from "geojson";
+import Map, { Layer, Source } from "@vis.gl/react-maplibre";
+import type { FeatureCollection, LineString, Point } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useTheme } from "next-themes";
-import { getRoute } from "@/lib/api";
-import type { Vehicle, Order, RouteInfo } from "@/types";
-import { useNavigationStore } from "@/store/navigation-store";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
-import { registerMapIcons, MAP_ICONS, reloadMapIcons } from "@/lib/map-icons";
-import { decodePolyline } from "@/lib/polyline"
 import { useRoute } from "../../hooks/useRoute";
 
 interface MapComponentProps {
@@ -43,14 +41,10 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
     reloadMapIcons(map, resolvedTheme);
   }, [resolvedTheme])
   
-  const {
-    selectedOrder,
-    isLoadingRoute,
-  } = useNavigationStore();
+  const { selectedOrder, isLoadingRoute } = useNavigationStore();
   
   // todo: check selected order is not null
   const { routeData, error } = useRoute(selectedOrder);
-  const cacheRoute = useNavigationStore((state) => state.routeCache);
 
 
 //   const routeKey = useMemo(() => {
@@ -74,10 +68,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ vehicles, orders }) => {
       setIsAnimating(true);
     });
   }, [routeData]);
-  
-
-  // Filter vehicles that have orders attached
-  const vehiclesWithOrders = vehicles.filter((v) => v.orderId);
   
   // Animation loop - moves route line from vehicle coordintes to order coordinates
   useEffect(() => {

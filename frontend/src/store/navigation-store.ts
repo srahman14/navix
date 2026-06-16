@@ -14,6 +14,7 @@ import {
   updateOrderInDB,
 } from "../../services/orderService";
 import { mapOrderFromDB, mapVehicleFromDB } from "@/lib/mapper";
+import { euclideanDistance } from "@/lib/distance";
 
 type RouteData = {
   geometry: {
@@ -140,6 +141,28 @@ type NavigationStore = {
     oldVehicleId: string | null,
     newVehicleId: string | null,
   ) => void;
+
+  // Assigment methods
+  assignOrderToVehicle: (
+    orderId: string,
+    vehicleId: string,
+  ) => void;
+
+  unassignOrderFromVehicle: (
+    orderId: string 
+  ) => void;
+
+  reassignOrderToVehicle: (
+    orderId: string,
+    newVehicleId: string
+  ) => void;
+
+  autoAssignOrderToVehicle: (
+    orderIds: string,
+  ) => void;
+
+  getOrdersForVehicle: (vehicleId: string) => Order[];
+  getOptimizedOrderSequence: (VehicleId: string | undefined) => Order[];
 };
 
 export const useNavigationStore = create<NavigationStore>((set, get) => ({
@@ -293,7 +316,16 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     if (!user) return;
 
     try {
-      const dbOrder = await createOrder(order, user.id);
+      // Create vehicle without any vehicle linked - assignment functions are only responsible for linking vehicles
+      const requestedVehicleId = order.vehicle_id;
+
+      const dbOrder = await createOrder(
+        {
+          ...order,
+          vehicle_id: null,
+        }, user.id
+      );
+
       const mappedOrder = mapOrderFromDB(dbOrder);
 
       set((state) => ({
@@ -301,7 +333,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
           ...state.orders,
           {
             ...mappedOrder,
-            db_id: dbOrder.id,
+            // db_id: dbOrder.id,
           },
         ],
       }));
@@ -309,6 +341,20 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       if (mappedOrder.vehicle_id) {
         // invalidate route for vehicle that order is added to
         get().invalidateVehicleRoute(mappedOrder.vehicle_id);
+      }
+
+      // Assign order to vehicle
+      if (requestedVehicleId) {
+        // Assign order to vehicle with it's corresponding vehicle linked
+        get().assignOrderToVehicle(
+          mappedOrder.db_id!,
+          requestedVehicleId
+        )
+      } else {
+        // Else - auto assign it to any available vehicle
+        get().autoAssignOrderToVehicle(
+          mappedOrder.db_id!
+        )
       }
 
       toast.success("Order saved to database");
@@ -321,12 +367,12 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
   deleteOrder: async (orderId) => {
     try {
-      const order = get().orders.find((o) => o.id === orderId);
+      const order = get().orders.find((o) => o.db_id === orderId);
 
       await deleteOrder(orderId);
 
       set((state) => ({
-        orders: state.orders.filter((v) => v.id !== orderId),
+        orders: state.orders.filter((v) => v.db_id !== orderId),
         selectedOrder:
           state.selectedOrder?.id === orderId ? null : state.selectedOrder,
       }));
@@ -342,12 +388,17 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       toast.error("Failed to delete Order");
     }
   },
-
+  
+  // TODO: use reassignOrderToVehicle in this method
   updateOrder: async (order: Order) => {
     try {
-      const prevOrder = get().orders.find((o) => o.id === order.id);
+      const prevOrder = get().orders.find((o) => o.db_id === order.db_id);
 
       // Update order in Supabase using order.service
+      // TODO: must check if vehicle changed first - if so have to use reassignOrderToVehicle, else can use updateOrderInDB -> this is because non-assignment updates -> safe to update directly - such as priority, weight and location, but for vehicle - must use engine for this
+      if (!order.db_id) {
+        throw new Error("Order missing db_id")
+      }
       const updated = await updateOrderInDB(order);
 
       set((state) => ({
@@ -360,7 +411,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
             : state.selectedOrder,
       }));
 
-      // hook point
+      // Verify if vehicle or Location has changed
       const vehicleChanged = prevOrder?.vehicle_id !== updated.vehicle_id;
       const locationChanged =
         prevOrder?.location[0] !== updated.location[0] ||
@@ -456,7 +507,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       }
 
       // Get vehicle from vehicleId
-      const vehicle = state.vehicles.find((v) => v.id === vehicleId);
+      const vehicle = state.vehicles.find((v) => v.db_id === vehicleId);
       if (!vehicle) throw new Error("Vehicle not found");
 
       // Build coordiantes (vehicle + all orders)
@@ -562,8 +613,176 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     }
   },
 
-  // Helpers
-  validateAssignment: (orderId: string, vehicleId: string | null) => {
+  // Assigment methods
+  assignOrderToVehicle: async (orderId: string, vehicleId: string) => {
+    // update order.vehicle_id
+    // persist in supabase
+    // update local state
+    // invalidate old + new vehilce routes
+    // trigger recompute hook 
+
+    try {
+      const state = get(); 
+
+      // Get order 
+      const order = state.orders.find((o) => o.db_id === orderId);
+      if (!order) throw new Error("Order not found");
+
+      // Get old vehicle (assigned to order) - used to invalidate old route
+      const prevVehicled = order.vehicle_id;
+
+      // Update DB -> assigning new vehicle to order
+      const updated = await updateOrderInDB({
+        ...order,
+        vehicle_id: vehicleId
+      });
+
+      // Update local state 
+      set((state) => ({
+        orders: state.orders.map((o) => 
+          o.id === updated.id ? updated : o
+        ),
+      }));
+
+      // Invalidate affected routes
+      get().invalidateOrderRoutes(
+        prevVehicled,
+        vehicleId
+      );
+
+      // Recompute route for new vehicle
+      const newVehicleOrders = get().getOptimizedOrderSequence(vehicleId);
+      const vehicle = state.vehicles.find((v) => v.db_id === vehicleId);
+
+      if (vehicle) {
+        const orderHash = newVehicleOrders
+          .map((o) => o.id)
+          .join("|")
+
+        await get().fetchAndCacheRoute(
+          vehicleId,
+          newVehicleOrders,
+          orderHash,
+        )
+      }
+
+      toast.success("Order assigned to vehicle");
+    } catch (err) {
+      console.log("assignOrderToVehicle error:", JSON.stringify(err, null, 2));
+      console.log("raw error:", err);
+
+      if (err instanceof Error) {
+        console.log(err.message);
+      }
+
+      toast.error("Failed to assign order");
+    }
+  },
+
+  unassignOrderFromVehicle: async (orderId) => {
+    // set order.vehicle_id to null
+    // update database
+    // invalidate previous vehilce route 
+    // recompute if need
+
+    try {
+      const state = get();
+
+      const order = state.orders.find((o) => o.db_id === orderId);
+      if (!order) throw new Error("Order not found");
+      
+      const prevVehicleId = order.vehicle_id;
+
+      if (!prevVehicleId) return;
+
+      // Update Order in DB 
+      const updated = await updateOrderInDB({
+        ...order,
+        vehicle_id: null,
+      });
+
+      // Update state 
+      set((state) => ({
+        orders: state.orders.map((o) => 
+          o.id === updated.id ? updated : o
+        ),
+      }));
+
+      // Invalidate old vehicle route 
+      get().invalidateVehicleRoute(prevVehicleId);
+
+      // Recompute old vehicle route 
+      const oldOrders = get().getOptimizedOrderSequence(prevVehicleId);
+      const vehicle = state.vehicles.find((v) => v.id === prevVehicleId);
+
+      if (vehicle) {
+        const orderHash = oldOrders.map((o) => o.id).join("|");
+
+        await get().fetchAndCacheRoute(
+          prevVehicleId,
+          oldOrders,
+          orderHash
+        );
+      }
+
+      toast.success("Order unassigned");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to unassign order");
+    }
+  },
+
+  reassignOrderToVehicle: (orderId, newVehicleId) => {
+    // read previous vehicle
+    // assign new vehicle
+    // invalidate both vehicles
+    // trigger recompute for both 
+    get().assignOrderToVehicle(orderId, newVehicleId);
+  },
+
+  // auto assigns one order to a vehicle 
+  autoAssignOrderToVehicle: (orderId) => {
+    // todo: 
+    // - batch update supabase
+    // - update state in one pass
+    // - invalidate vehicle once
+    // - compute one route for whole batch 
+
+    // currently - just choose vehicle with the least number of orders
+    try { 
+      const state = get();
+
+      const vehicles = state.vehicles;
+
+      if (vehicles.length === 0) {
+        throw new Error("No vehicles available");
+      }
+
+      // pick least loaded vehicle
+      const sorted = [...vehicles].sort(
+        (a, b) => 
+          get().getOrdersForVehicle(a.db_id!).length - 
+        get().getOrdersForVehicle(b.db_id!).length
+      );
+
+      const targetVehicle = sorted[0];
+
+      if (!targetVehicle.db_id) {
+        throw new Error("Vehicle missing db_id"); 
+      }
+
+      get().assignOrderToVehicle(
+        orderId,
+        targetVehicle.db_id
+      )
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to auto-assign order")
+    }
+  },
+
+// Helpers
+validateAssignment: (orderId: string, vehicleId: string | null) => {
     const state = get();
 
     if (vehicleId) {
@@ -591,4 +810,55 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       .sort()
       .join("|");
   },
+
+  // replaced by getOptimizedOrderSequence
+  getOrdersForVehicle: (vehicleId: string) => {
+    // assumes vehicle.db_id not vehicle.id 
+    return get().orders.filter((o) => o.vehicle_id === vehicleId)
+  },
+
+  // Distance Helper
+  getOptimizedOrderSequence: (vehicleId) => {
+    const state = get();
+
+    const vehicle = state.vehicles.find(
+      (v) => v.db_id === vehicleId
+    );
+
+    if (!vehicle) return [];
+
+    const orders = state.orders.filter(
+      (o) => o.vehicle_id === vehicleId
+    );
+
+    if (orders.length <= 1) return orders;
+
+    const remaining = [...orders];
+    const ordered: Order[] = [];
+
+    let currentLocation = vehicle.startLocation;
+
+    while (remaining.length > 0) {
+      let closestIndex = 0;
+      let minDistance = Infinity;
+
+      for (let i = 0; i < remaining.length; i++) {
+        const distance = euclideanDistance(
+          currentLocation,
+          remaining[i].location
+        );
+
+        if (distance && distance < minDistance) {
+          minDistance = distance;
+          closestIndex = i;
+        }
+      }
+
+      const nextOrder = remaining.splice(closestIndex, 1)[0];
+      ordered.push(nextOrder);
+      currentLocation = nextOrder.location;
+    }
+
+    return ordered;
+  }
 }));

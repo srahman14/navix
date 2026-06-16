@@ -19,7 +19,8 @@ export interface Vehicle {
 // TODO: only allow orders to add vehicleIDs
 export interface Order {
   id: string;
-  // todo: add db_id -> UUID generated in Supabase
+  // db_id -> UUID auto-gen in supabase
+  db_id?: string;
   priority: "high" | "medium" | "low";
   weight: number;
   location: [number, number];
