@@ -15,6 +15,7 @@ export const mapVehicleFromDB = (dbVehicle: any): Vehicle => ({
 
 export const mapOrderFromDB = (dbOrder: any): Order => ({
     id: dbOrder.name,
+    db_id: dbOrder.id,
     priority: dbOrder.priority,
     weight: dbOrder.weight,
     location: [

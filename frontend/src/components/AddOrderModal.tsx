@@ -62,7 +62,6 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
   const setEditingVehicleId = useNavigationStore((state) => state.setEditingVehicleId);
   const getOrderById = useNavigationStore((state) => state.getOrderById);
   const orderToEdit = (editingOrderId != null) ? getOrderById(editingOrderId) : null; 
-  const orders = useNavigationStore((state) => state.orders);
 
     useEffect(() => {
       if (open) {
@@ -115,9 +114,17 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
 
     console.log("Creating order", newOrder);
 
-    // TODO - add editing to Orders
     if (editMode && editingOrderId != null) {
-      updateOrder(newOrder)
+      const updatedOrder: Order = {
+        ...orderToEdit, 
+        id: formData.id,
+        priority: formData.priority,
+        weight: formData.weight,
+        location: [lng, lat],
+        vehicle_id: formData.selectedVehicleId || null,
+      };
+
+      updateOrder(updatedOrder)
       setEditingMode(false);
       setEditingVehicleId(null);
       onOpenChange(false);

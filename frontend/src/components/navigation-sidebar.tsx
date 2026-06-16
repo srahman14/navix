@@ -1,17 +1,17 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
-import { useSidebarStore } from "@/store/sidebar-store";
 import { useNavigationStore } from "@/store/navigation-store";
+import { useSidebarStore } from "@/store/sidebar-store";
+import { Order, Vehicle } from "@/types";
+import { motion } from "framer-motion";
+import React from "react";
+import ActiveOrdersModal from "./ActiveOrdersModal";
+import ActiveVehiclesModal from "./ActiveVehiclesModal";
+import { AddOrderModal } from "./AddOrderModal";
+import { AddVehicleModal } from "./AddVehicleModal";
+import { OrdersSection } from "./OrdersSection";
 import { SidebarHeader } from "./SidebarHeader";
 import { VehiclesSection } from "./VehiclesSection";
-import { OrdersSection } from "./OrdersSection";
-import { AddVehicleModal } from "./AddVehicleModal";
-import { AddOrderModal } from "./AddOrderModal";
-import ActiveVehiclesModal from "./ActiveVehiclesModal";
-import ActiveOrdersModal from "./ActiveOrdersModal";
-import { Order, Vehicle } from "@/types";
 
 const NavigationSidebar: React.FC = () => {
   const { isOpen, toggleSidebar } = useSidebarStore();
@@ -29,10 +29,17 @@ const NavigationSidebar: React.FC = () => {
   const addVehicleToDB = useNavigationStore((state) => state.addVehicleToDB);
   const addOrderToDB = useNavigationStore((state) => state.addOrderToDB);
   const routeCache = useNavigationStore((state) => state.routeCache);
+  const assignOrderToVehicle = useNavigationStore((state) => state.assignOrderToVehicle);
 
   console.log("route caches", {
     routeCache
   })
+    // console.log("Optimized Order Seq", 
+    //   useNavigationStore.getState().getOptimizedOrderSequence(
+    //     useNavigationStore.getState().selectedVehicle?.db_id
+    //   )
+    // )
+  
 
   const handleAddVehicle = async (vehicle: Vehicle) => {
     await addVehicleToDB(vehicle);
