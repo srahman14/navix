@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import type { Vehicle, Order, RouteInfo } from "@/types";
+import type { Vehicle, Order, RouteInfo, RouteData, ScoredRoute } from "@/types";
 import toast from "react-hot-toast";
-import { getRoute } from "@/lib/api";
+import { getRoute, getRouteScore } from "@/lib/api";
 import { supabase } from "@/lib/supabaseClient";
 import {
   createVehicle,
@@ -16,16 +16,6 @@ import {
 import { mapOrderFromDB, mapVehicleFromDB } from "@/lib/mapper";
 import { euclideanDistance } from "@/lib/distance";
 
-type RouteData = {
-  geometry: {
-    encoded: string;
-  };
-  summary: {
-    distance: number;
-    duration: number;
-  };
-};
-
 type LocationData = {
   locality: string;
   region: string;
@@ -39,6 +29,13 @@ type LocationData = {
     lng: number;
   };
 };
+
+type RouteCache = {
+  [vehicleId: string]: {
+    orderHash: string;
+    routes: ScoredRoute[];
+  };
+}
 
 type NavigationStore = {
   // Core
@@ -64,12 +61,7 @@ type NavigationStore = {
   // Future -> add primaryRoute and alternatives - more semantically clear
   // i.e. replace routes -> primaryRoute: RouteData; 
   // add -> 'alternatives?: routeData[];' 
-  routeCache: {
-    [vehicleId: string]: {
-      orderHash: string;
-      routes: RouteData[];
-    };
-  };
+  routeCache: RouteCache;
   // Location Cache - Reverse geocoding results stored by location key
   locationCache: { [key: string]: LocationData[] };
   // UI State
@@ -127,14 +119,14 @@ type NavigationStore = {
     orders: Order[],
     orderHash: string,
   ) => Promise<void>;
-    getCachedRoute: (
-      vehicleId: string
-    ) =>
-      | {
-          orderHash: string;
-          routes: RouteData[];
-        }
-      | null;
+  getCachedRoute: (
+    vehicleId: string
+  ) =>
+    | {
+        orderHash: string;
+        routes: ScoredRoute[];
+      }
+    | null;
   clearRouteCache: (vehicleId: string) => void;
 
   // Location caching
@@ -169,6 +161,7 @@ type NavigationStore = {
   ) => void;
 
   getOrdersForVehicle: (vehicleId: string) => Order[];
+  getBestRoute: (vehicleId: string) => ScoredRoute | null;
   getOptimizedOrderSequence: (VehicleId: string | undefined) => Order[];
 };
 
@@ -190,7 +183,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     string,
     {
       orderHash: string;
-      routes: RouteData[];
+      routes: ScoredRoute[];
     }
   >,
   locationCache: {},
@@ -528,15 +521,27 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
       // Fetch routes from API
       const routeData = await getRoute(coordinates);
+      // Fetch score of routes from scoring engine
+      const scoringMode = orders.length === 1 ? "absolute" : "relative"; 
+
+      const scored = await getRouteScore(
+        routeData.routes,
+        vehicle,
+        orders,
+        scoringMode
+      )
+
+      if (!scored || (Array.isArray(scored) && scored.length === 0)) {
+        throw new Error("Scoring returned empty result");
+      }
 
       // Cache the routes by vehicle ID
-
       set((state) => ({
         routeCache: {
           ...state.routeCache,
           [vehicleId]: {
             orderHash,
-            routes: routeData.routes || [],
+            routes: Array.isArray(scored) ? scored : [scored],
           },
         },
         isLoadingRoute: false,
@@ -802,7 +807,7 @@ validateAssignment: (orderId: string, vehicleId: string | null) => {
         console.warn("Invalid vehicle assignment blocked");
         return false;
       }
-    }
+  }
 
     const orderExists = state.orders.some((o) => o.id === orderId);
 
@@ -825,6 +830,16 @@ validateAssignment: (orderId: string, vehicleId: string | null) => {
   getOrdersForVehicle: (vehicleId: string) => {
     // assumes vehicle.db_id not vehicle.id 
     return get().orders.filter((o) => o.vehicle_id === vehicleId)
+  },
+
+  // Best Route Helper
+  getBestRoute: (vehicleId: string) => {
+    const state = get();
+    const cache = state.routeCache[vehicleId];
+
+    if (!cache || !cache.routes.length) return null;
+
+    return cache.routes[0];
   },
 
   // Distance Helper

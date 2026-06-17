@@ -28,8 +28,29 @@ export interface Order {
 };
 
 export interface RouteInfo {
-  distance: number | null;
-  duration: number | null;
+  distance: number;
+  duration: number;
+  score?: number;
+  metrics?: RouteMetrics;
 };
 
-// TODO: add a type for Route
+export interface RouteData {
+  geometry: {
+    encoded: string;
+  };
+  summary: {
+    distance: number;
+    duration: number;
+  };
+};
+
+export interface RouteMetrics {
+  distanceScore: number;
+  durationScore: number;
+  capacityPenalty: number;
+}
+
+export type ScoredRoute = RouteData & {
+  score: number;
+  metrics: RouteMetrics;
+} 
