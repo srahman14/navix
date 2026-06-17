@@ -31,33 +31,34 @@ export const RouteInfo: React.FC = () => {
   const setCachedLocation = useNavigationStore(
     (state) => state.setCachedLocation,
   );
-  const selectedOrder = useNavigationStore((state) => state.selectedOrder)
+  const selectedOrder = useNavigationStore((state) => state.selectedOrder);
   const [startLocation, setStartLocation] = useState("");
   const [endLocation, setEndLocation] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
-  const vehicle = vehicles.find((v) => v.db_id === selectedOrder?.vehicle_id)
+
+  // More Metrics
+  const [expandedMetricsIndex, setExpandedMetricsIndex] = useState<
+    number | null
+  >(null);
+
+  const vehicle = vehicles.find((v) => v.db_id === selectedOrder?.vehicle_id);
 
   useEffect(() => {
     if (!selectedOrder?.vehicle_id || !selectedOrder?.location) {
-
-      console.log("Selected Vehicle/Order was null")
+      console.log("Selected Vehicle/Order was null");
 
       setStartLocation("");
       setEndLocation("");
       return;
     }
 
-    
     // Create cache key from vehicle ID and order ID
     const cacheKey = `${selectedOrder.vehicle_id}-${selectedOrder.id}`;
 
     // Check if location is already cached
     const cachedLocation = getCachedLocation(cacheKey);
-    console.log(
-      "route location was cached",
-      {cacheKey: cachedLocation}
-    )
+    console.log("route location was cached", { cacheKey: cachedLocation });
     if (cachedLocation && cachedLocation.length >= 2) {
       setStartLocation(
         cachedLocation[0].road +
@@ -127,20 +128,30 @@ export const RouteInfo: React.FC = () => {
     };
     handleFetchingLocation();
   }, [vehicle, selectedOrder, getCachedLocation, setCachedLocation]);
-
-      
+  
   const handleCopy = () => {
-      const copyInfo = copyRouteInfo(vehicle?.id, selectedOrder?.id, startLocation, endLocation, routeInfo);
-      if (!copyInfo) return;
-      
-      setCopySuccess(true);
-      setIsDisabled(true);
-      navigator.clipboard.writeText(copyInfo) 
-      setTimeout(() => {
-        setCopySuccess(false);
-        setIsDisabled(false);
-      }, 2000)
-    }
+    const copyInfo = copyRouteInfo(
+      vehicle?.id,
+      selectedOrder?.id,
+      startLocation,
+      endLocation,
+      routeInfo,
+    );
+    if (!copyInfo) return;
+
+    setCopySuccess(true);
+    setIsDisabled(true);
+    navigator.clipboard.writeText(copyInfo);
+    setTimeout(() => {
+      setCopySuccess(false);
+      setIsDisabled(false);
+    }, 2000);
+  };
+
+  const toggleMetrics = (index: number) => {
+    setExpandedMetricsIndex((prev) => (prev === index ? null : index));
+  };
+
 
   return (
     <motion.div
@@ -203,15 +214,21 @@ export const RouteInfo: React.FC = () => {
                   {routeInfo && (
                     <div className="flex justify-end items-center">
                       <Button
-                        variant={'ghost'}
+                        variant={"ghost"}
                         onClick={() => handleCopy()}
                         disabled={isDisabled}
                       >
-                        {copySuccess ?
-                          <CircleCheckBig size={'20'} className='dark:text-zinc-400 text-zinc-600'/>
-                          : 
-                          <Copy size={'20'} className='dark:text-zinc-200 text-zinc-600'/>
-                          }
+                        {copySuccess ? (
+                          <CircleCheckBig
+                            size={"20"}
+                            className="dark:text-zinc-400 text-zinc-600"
+                          />
+                        ) : (
+                          <Copy
+                            size={"20"}
+                            className="dark:text-zinc-200 text-zinc-600"
+                          />
+                        )}
                       </Button>
                     </div>
                   )}
@@ -225,43 +242,116 @@ export const RouteInfo: React.FC = () => {
                 </div>
               </div>
 
-              {/* Route Options */}
+             {/* Route Options */}
               {routeInfo && Array.isArray(routeInfo) && routeInfo.length > 0 ? (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {routeInfo.map((route, index) => (
-                    <div
-                      key={index}
-                      className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg"
-                    >
-                      <span className="flex items-center justify-between mb-2">
-                        <p className="text-md text-zinc-600 dark:text-zinc-400 uppercase font-semibold">
-                          Route Option {index + 1}
-                        </p>
-                        <Route
-                          size={16}
-                          className="text-zinc-500 dark:text-zinc-400"
-                        />
-                      </span>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                            Distance
-                          </p>
-                          <p className="text-lg font-bold text-zinc-900 dark:text-white">
-                            {formatDistance(route.distance)}
-                          </p>
+                <div className="space-y-2 max-h-360 overflow-y-auto">
+                  {routeInfo.map((route, index) => {
+                    const isBest = index === 0;
+                    const isMetricsExpanded = expandedMetricsIndex === index;
+ 
+                    return (
+                      <div
+                        key={index}
+                        className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <p className="text-md text-zinc-600 dark:text-zinc-400 uppercase font-semibold">
+                              Route Option {index + 1}
+                            </p>
+                          </div>
+                          <div className="inline-flex space-x-2 items-center justify-center">
+                            {isBest && (
+                              <span className="text-xs px-2 py-1 rounded bg-green-100/20 text-green-500 font-bold tracking-tight">
+                                #1
+                              </span>
+                            )}
+                          <Route
+                            size={16}
+                            className="text-zinc-500 dark:text-zinc-400"
+                          />
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                            Duration
-                          </p>
-                          <p className="text-lg font-bold text-zinc-900 dark:text-white">
-                            {formatDuration(route.duration)}
-                          </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                              Distance
+                            </p>
+                            <p className="text-lg font-bold text-zinc-900 dark:text-white">
+                              {formatDistance(route.distance)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                              Duration
+                            </p>
+                            <p className="text-lg font-bold text-zinc-900 dark:text-white">
+                              {formatDuration(route.duration)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                              Score
+                            </p>
+                            <p className="text-lg font-bold text-zinc-900 dark:text-white">
+                              {route.score?.toFixed(3)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-4">
+                          <button
+                            type="button"
+                            onClick={() => toggleMetrics(index)}
+                            aria-expanded={isMetricsExpanded}
+                            className="inline-flex space-x-1 items-center justify-center hover:text-zinc-950 hover:dark:text-zinc-200 text-zinc-600 dark:text-zinc-400 cursor-pointer"
+                          >
+                            <p className="text-xs">
+                              {isMetricsExpanded
+                                ? "Less metrics"
+                                : "More metrics"}
+                            </p>
+                            <motion.span
+                              animate={{ rotate: isMetricsExpanded ? 180 : 0 }}
+                              transition={{ type: "tween", duration: 0.2 }}
+                            >
+                              <ChevronDown size={15} />
+                            </motion.span>
+                          </button>
+ 
+                          <AnimatePresence>
+                            {isMetricsExpanded && route.metrics && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ type: "tween", duration: 0.2 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="mt-2 text-xs text-zinc-500 space-y-1">
+                                  <p>
+                                    Distance Score:{" "}
+                                    {route.metrics.distanceScore?.toFixed(3) ??
+                                      "No metrics"}
+                                  </p>
+                                  <p>
+                                    Duration Score:{" "}
+                                    {route.metrics.durationScore?.toFixed(3) ??
+                                      "No metrics"}
+                                  </p>
+                                  <p>
+                                    Capacity Penalty:{" "}
+                                    {route.metrics.capacityPenalty?.toFixed(
+                                      3,
+                                    ) ?? "No metrics"}
+                                  </p>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
