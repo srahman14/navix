@@ -83,7 +83,7 @@ const NavigationSidebar: React.FC = () => {
             {/* Action Buttons Footer */}
             <div className="p-4 space-y-2 border-t border-zinc-200 dark:border-zinc-800">
               <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
-                Optimize Route
+                Generate Report
               </button>
               <button className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold rounded-lg transition-colors">
                 View Reports

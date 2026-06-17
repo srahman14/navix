@@ -63,7 +63,7 @@ export const fetchFromORS = async (profile = "driving-car", coordinates) => {
     }
 
     const routes = data.routes.map((route) => {
-        const decoded = convertPolylineToCoordinates(route.geometry);
+        // const decoded = convertPolylineToCoordinates(route.geometry);
 
         return {
             summary: route.summary,

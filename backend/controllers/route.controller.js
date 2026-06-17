@@ -20,6 +20,7 @@ export async function getRouteForProfile(req, res) {
     });
 
   } catch (error) {
+    console.error(errorText)
     console.error("Route error: " + error.message);
 
     res.status(500).json({ 

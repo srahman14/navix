@@ -61,6 +61,9 @@ type NavigationStore = {
   selectedRouteIndex: number;
   routeInfo: RouteInfo[] | null;
   // Route Cache - vehicleId holds both orderHash and computed routes
+  // Future -> add primaryRoute and alternatives - more semantically clear
+  // i.e. replace routes -> primaryRoute: RouteData; 
+  // add -> 'alternatives?: routeData[];' 
   routeCache: {
     [vehicleId: string]: {
       orderHash: string;
@@ -519,6 +522,9 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
         vehicle.startLocation,
         ...orders.map((o) => o.location),
       ];
+
+      // Debugging
+      // console.log("Sending coordinates:", coordinates);
 
       // Fetch routes from API
       const routeData = await getRoute(coordinates);
