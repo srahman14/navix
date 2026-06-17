@@ -1,9 +1,15 @@
-export const computeScoreRoutes = async (routes) => {
+// Pass in routes - i.e. routeCache - if it's a multi-route - will have more than one route which connects all orders 
+// if it's only two coordinates - will have alterantive routes
+export const computeScoreRoute = async (routes, vehicle, orders, scoringMode = "relative") => {
     // Handle single route for backward compatibility
     const routeArray = Array.isArray(routes) ? routes : [routes];
 
-    for (const route of routes) {
-        if (!route.summary || route.summary.distance === undefined || route.summary.duration === undefined) {
+    if (!routeArray.length) {
+        throw new Error("No routes provided");
+    }
+
+    for (const route of routeArray) {
+        if (!route.summary || route.summary.distance === null || route.summary.duration === null) {
             throw new Error("All routes must have summaries with distances and durations")
         } 
     }
@@ -18,30 +24,89 @@ export const computeScoreRoutes = async (routes) => {
         return (value - min) / (max - min);
     }
 
-    // Min & Max distances/durations
-    const minDistance = Math.min(...distances);
-    const maxDistance = Math.max(...distances);
-    const minDuration = Math.min(...durations);
-    const maxDuration = Math.max(...durations);
+    // For Absolute Mode
+    const computeAbsolute = (route) => {
+        const vehicleCap = vehicle?.capacity ?? 1;
 
-    return routeArray.map((route) => {
-        // Normalized distance & duration for current route
-        const normDistance = normalize(route.summary.distance, minDistance, maxDistance);
-        const normDuration = normalize(route.summary.duration, minDuration, maxDuration);
-        // weights for now set to 0.5 (for current v1)
-        // will be configurable for future with user preference, VRP policy, optimization tuning
-        const distanceWeight = 0.5;
-        const durationWeight = 0.5;
-        // Score of Route (WSM)
-        // Lower score = more optimal route 
-        const score = 
-            distanceWeight * normDistance +
-            durationWeight * normDuration;
+        const totalWeight = orders.reduce(
+            (sum, o) => sum + (o.weight ?? 0),
+            0
+        );
+
+        const capacityPenalty =
+            vehicleCap > 0
+                ? Math.max(0, (totalWeight - vehicleCap) / vehicleCap)
+                : 1;
+
+        // raw scaling (simple but effective v1)
+        const distanceScore = route.summary.distance / 10000;
+        const durationScore = route.summary.duration / 3600;
+
+        const score =
+            0.4 * distanceScore +
+            0.4 * durationScore +
+            0.2 * capacityPenalty;
 
         return {
             ...route,
-            score
-        }
-        
-    });
+            score,
+            metrics: {
+                distanceScore,
+                durationScore,
+                capacityPenalty,
+            }
+        };
+    };
+
+    const computeRelative = (route) => {
+        const minDistance = Math.min(...distances);
+        const maxDistance = Math.max(...distances);
+        const minDuration = Math.min(...durations);
+        const maxDuration = Math.max(...durations);
+
+        const distanceScore = normalize(route.summary.distance, minDistance, maxDistance);
+        const durationScore = normalize(route.summary.duration, minDuration, maxDuration);
+
+        const vehicleCap = vehicle?.capacity ?? 1;
+
+        const totalWeight = orders.reduce(
+            (sum, o) => sum + (o.weight ?? 0),
+            0
+        );
+
+        const capacityPenalty =
+            vehicleCap > 0
+                ? Math.max(0, (totalWeight - vehicleCap) / vehicleCap)
+                : 1;
+
+        const score =
+            0.4 * distanceScore +
+            0.4 * durationScore +
+            0.2 * capacityPenalty;
+
+        return {
+            ...route,
+            score,
+            metrics: {
+                distanceScore,
+                durationScore,
+                capacityPenalty,
+            }
+        };
+    };
+
+    const scored = routeArray.map(route => 
+        scoringMode === "absolute"
+            ? computeAbsolute(route)
+            : computeRelative(route)
+    );
+
+    // multi-stop (1 route) -> return single object (absolute scoring)
+    if (scored.length === 1) {
+        return scored[0];
+    } 
+
+    // alternative routes -> ranked list (relative scoring)
+    return scored.sort((a, b) => a.score - b.score);
+
 }
