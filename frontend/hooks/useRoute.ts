@@ -16,8 +16,10 @@ export const useRoute = (selectedOrder: Order | null) => {
     setRouteInfo,
     setLoadingRoute,
     setRouteError,
+    getBestRoute,
     routeCache,
     vehicles,
+  
   } = useNavigationStore();
 
   const [routeData, setRouteData] =
@@ -56,7 +58,7 @@ export const useRoute = (selectedOrder: Order | null) => {
         console.log("vehicle_id", selectedOrder.vehicle_id);
         console.log("routeCache", routeCache);
 
-        // Check if route is in cache first
+        // Check if route is in cache bestRoute
         let cachedRoutes = getCachedRoute(selectedOrder.vehicle_id!);
 
         if (!cachedRoutes) {
@@ -79,9 +81,11 @@ export const useRoute = (selectedOrder: Order | null) => {
 
         toast.success("Fetched route from cache");
 
-        const first = cachedRoutes.routes[0];
+        // Scoring engine sorts routes - first is best by default
+        const bestRoute = getBestRoute(selectedOrder.vehicle_id!);
+        if (!bestRoute) throw new Error("No route found");
 
-        const coords = decodePolyline(first.geometry.encoded);
+        const coords = decodePolyline(bestRoute?.geometry.encoded);
 
         const geojson: FeatureCollection<LineString> = {
           type: "FeatureCollection",
@@ -93,8 +97,8 @@ export const useRoute = (selectedOrder: Order | null) => {
                 coordinates: coords,
               },
               properties: {
-                distance: first.summary.distance,
-                duration: first.summary.duration,
+                distance: bestRoute?.summary.distance,
+                duration: bestRoute?.summary.duration,
               },
             },
           ],
@@ -106,6 +110,8 @@ export const useRoute = (selectedOrder: Order | null) => {
           cachedRoutes.routes.map((r) => ({
             distance: r.summary.distance,
             duration: r.summary.duration,
+            score: r.score,
+            metrics: r.metrics
           })),
         );
       } catch (err) {
