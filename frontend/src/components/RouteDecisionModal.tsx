@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigationStore } from "@/store/navigation-store";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, TrendingUp } from "lucide-react";
+import { formatDistance, formatDuration } from "@/lib/format";
 
 interface RouteDecisionModalProps {
   open: boolean;
@@ -23,9 +24,11 @@ const RouteDecisionModal: React.FC<RouteDecisionModalProps> = ({
         <Dialog.Overlay className="fixed inset-0 bg-black/50 z-40" />
 
         {/* Modal */}
-        <Dialog.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg p-6 shadow-lg">
+        <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 rounded-lg">
 
           {/* Header */}
+          <header className="flex flex-col">
+
           <div className="flex items-center justify-between mb-4">
             <Dialog.Title className="text-lg font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
               <TrendingUp size={18} />
@@ -38,6 +41,12 @@ const RouteDecisionModal: React.FC<RouteDecisionModalProps> = ({
               </button>
             </Dialog.Close>
           </div>
+          <div>
+            <Dialog.Description className="text-xs font-bold">
+              This is a generated report for <span>{report?.vehicleId}</span> for route {report?.bestRouteIndex! + 1}. 
+            </Dialog.Description>
+          </div>
+          </header>
 
           {/* BODY */}
           {loading && (
@@ -56,7 +65,23 @@ const RouteDecisionModal: React.FC<RouteDecisionModalProps> = ({
           )}
 
           {!loading && !error && report && (
+
             <div className="space-y-4">
+              <div>
+                <p className="text-xs text-zinc-500">Details</p>
+                <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded">
+                  <ul className="text-xs font-bold tracking-tight grid grid-cols-2">
+                    <li>Vehicle ID: {report.vehicleId}</li>
+                    <li>Vehicle Type: {report.vehicleType}</li>
+                    <li>Total Distance: {formatDistance(report.totalDistance)}</li>
+                    <li>Total Duration: {formatDuration(report.totalDuration)}</li>
+                    <li>No. Orders Assigned: {report.ordersAssigned}</li>
+                    <li>Capacity Used: {report.capacityUsedPercent}%</li>
+
+                  </ul>                    
+                </div>
+              </div>
+
               <div>
                 <p className="text-xs text-zinc-500">Recommendation</p>
                 <p className="font-medium text-zinc-900 dark:text-white">

@@ -73,8 +73,16 @@ export interface RouteReport {
 }
 
 export interface RouteDecisionReport {
+  vehicleId: string,
+  vehicleType: string,
+  ordersAssigned: number,
+  totalDistance: number,
+  totalDuration: number,
+  capacityUsedPercent: number,
+  scoringMode: string,
   summary: string;
   recommendation: string;
   bestRouteIndex: number;
   score?: number;
+  generatedAt: Date,
 }
