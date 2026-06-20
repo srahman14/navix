@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import type { Vehicle, Order, RouteInfo, RouteData, ScoredRoute } from "@/types";
+import type { Vehicle, Order, RouteInfo, RouteData, ScoredRoute, RouteDecisionReport } from "@/types";
 import toast from "react-hot-toast";
-import { getRoute, getRouteScore } from "@/lib/api";
+import { getRoute, getRouteDecisionReport, getRouteScore } from "@/lib/api";
 import { supabase } from "@/lib/supabaseClient";
 import {
   createVehicle,
@@ -48,7 +48,7 @@ type NavigationStore = {
 
   // Modal State
   isModalOpen: boolean;
-  modalType: "vehicle" | "order" | "active-vehicles" | "active-orders" | null;
+  modalType: "vehicle" | "order" | "active-vehicles" | "active-orders" | "report" |null;
   editingMode: true | false;
   editingVehicleId: string | null;
   editingOrderId: string | null;
@@ -67,6 +67,11 @@ type NavigationStore = {
   // UI State
   isLoadingRoute: boolean;
   routeError: string | null;
+
+  // Route Report
+  routeDecisionReport: RouteDecisionReport | null;
+  isGeneratingReport: boolean;
+  reportError: string | null;
 
   // Actions
   // Vehicles
@@ -93,7 +98,7 @@ type NavigationStore = {
 
   // Modal
   openModal: (
-    type: "vehicle" | "order" | "active-vehicles" | "active-orders",
+    type: "vehicle" | "order" | "active-vehicles" | "active-orders" | "report",
   ) => void;
   closeModal: () => void;
 
@@ -163,6 +168,10 @@ type NavigationStore = {
   getOrdersForVehicle: (vehicleId: string) => Order[];
   getBestRoute: (vehicleId: string) => ScoredRoute | null;
   getOptimizedOrderSequence: (VehicleId: string | undefined) => Order[];
+
+  generateRouteDecisionReport: (
+    VehicleId: string 
+  ) => Promise<void>;
 };
 
 export const useNavigationStore = create<NavigationStore>((set, get) => ({
@@ -189,6 +198,9 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   locationCache: {},
   isLoadingRoute: false,
   routeError: null,
+  routeDecisionReport: null,
+  isGeneratingReport: false,
+  reportError: null,
 
   // Vehicle Actions
   setVehicles: (vehicles) => set({ vehicles }),
@@ -885,5 +897,65 @@ validateAssignment: (orderId: string, vehicleId: string | null) => {
     }
 
     return ordered;
-  }
+  },
+
+  generateRouteDecisionReport: async (vehicleId) => {
+    try {
+      set({
+        isGeneratingReport: true,
+        reportError: null,
+      });
+
+      const state = get();
+
+      const cached = state.routeCache[vehicleId];
+      if (!cached) {
+        throw new Error("No cached route found");
+      }
+
+      const vehicle = state.vehicles.find(
+        (v) => v.db_id === vehicleId
+      );
+
+      if (!vehicle) {
+        throw new Error("Vehicle not found");
+      }
+
+      const orders = state.orders.filter(
+        (o) => o.vehicle_id === vehicleId
+      );
+
+      const scoringMode = orders.length === 1 ? "absolute" : "relative"; 
+
+      console.log("REPORT PAYLOAD", {
+        routes: cached.routes,
+        vehicle,
+        orders,
+        scoringMode,        
+      });
+      
+      const report = await getRouteDecisionReport(
+        cached.routes,
+        vehicle,
+        orders,
+        scoringMode
+      );
+
+      set({
+        routeDecisionReport: report,
+        isGeneratingReport: false,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to generate report";
+
+      set({
+        reportError: message,
+        isGeneratingReport: false,
+      });
+    }
+  },
+
 }));

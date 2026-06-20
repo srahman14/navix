@@ -54,3 +54,27 @@ export type ScoredRoute = RouteData & {
   score: number;
   metrics: RouteMetrics;
 } 
+
+export interface RouteReport {
+  vehicleId: string;
+  vehicleType: string;
+  ordersAssigned: number;
+
+  totalDistance: number;
+  totalDuration: number;
+
+  routeScore: number;
+  capacityUsedPercent: number;
+
+  scoringMode: string;
+  generatedAt: string;
+
+  summary: string;
+}
+
+export interface RouteDecisionReport {
+  summary: string;
+  recommendation: string;
+  bestRouteIndex: number;
+  score?: number;
+}
