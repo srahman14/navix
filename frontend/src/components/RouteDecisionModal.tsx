@@ -13,19 +13,25 @@ const RouteDecisionModal: React.FC<RouteDecisionModalProps> = ({
   open,
   onOpenChange,
 }) => {
-  // Report
-  const report = useNavigationStore((state) => state.routeDecisionReport);
+  // Report (Decision Engine)
+  const decision = useNavigationStore((state) => state.routeDecision);
+  // Extract Report + Explanation from Decision Engine 
+  const report = decision?.report;
+  const explanation = decision?.explanation;
+
+  // Loading state for Report (Decision Engine) + error 
   const loading = useNavigationStore((state) => state.isGeneratingReport);
   const error = useNavigationStore((state) => state.reportError);
 
   // Report Explanation
-  const explanation = useNavigationStore((state) => state.routeExplanation);
-  const loadingExplanation = useNavigationStore(
-    (state) => state.isGeneratingExplanation,
-  );
-  const explanationError = useNavigationStore(
-    (state) => state.explanationError,
-  );
+  // const explanation = useNavigationStore((state) => state.routeExplanation);
+  // Loading state for explanaion + error 
+  // const loadingExplanation = useNavigationStore(
+  //   (state) => state.isGeneratingExplanation,
+  // );
+  // const explanationError = useNavigationStore(
+  //   (state) => state.explanationError,
+  // );
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
