@@ -12,12 +12,14 @@ import { AddVehicleModal } from "./AddVehicleModal";
 import { OrdersSection } from "./OrdersSection";
 import { SidebarHeader } from "./SidebarHeader";
 import { VehiclesSection } from "./VehiclesSection";
+import RouteDecisionModal from "./RouteDecisionModal";
 
 const NavigationSidebar: React.FC = () => {
   const { isOpen, toggleSidebar } = useSidebarStore();
   const isModalOpen = useNavigationStore((state) => state.isModalOpen);
   const modalType = useNavigationStore((state) => state.modalType);
   const closeModal = useNavigationStore((state) => state.closeModal);
+  const openModal = useNavigationStore((state) => state.openModal);
   const vehicles = useNavigationStore((state) => state.vehicles);
   const orders = useNavigationStore((state) => state.orders);
   const addVehicle = useNavigationStore((state) => state.addVehicle);
@@ -30,6 +32,9 @@ const NavigationSidebar: React.FC = () => {
   const addOrderToDB = useNavigationStore((state) => state.addOrderToDB);
   const routeCache = useNavigationStore((state) => state.routeCache);
   const assignOrderToVehicle = useNavigationStore((state) => state.assignOrderToVehicle);
+  const selectedOrder = useNavigationStore((state) => state.selectedOrder);
+  const generateRouteDecisionReport = useNavigationStore((state) => state.generateRouteDecisionReport);
+  
 
   console.log("route caches", {
     routeCache
@@ -54,6 +59,15 @@ const NavigationSidebar: React.FC = () => {
   const handleAddOrder = async (order: Order) => {
     await addOrderToDB(order);
     closeModal();
+  };
+
+  const handleGenerateReport = () => {
+    if (!selectedOrder?.vehicle_id) return;
+
+
+
+    openModal("report");
+    generateRouteDecisionReport(selectedOrder.vehicle_id);
   };
 
   console.log(vehicles)
@@ -82,7 +96,7 @@ const NavigationSidebar: React.FC = () => {
 
             {/* Action Buttons Footer */}
             <div className="p-4 space-y-2 border-t border-zinc-200 dark:border-zinc-800">
-              <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+              <button onClick={() => handleGenerateReport()} className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
                 Generate Report
               </button>
               <button className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold rounded-lg transition-colors">
@@ -118,6 +132,16 @@ const NavigationSidebar: React.FC = () => {
           }}
           vehicles={vehicles}
           onSubmitOrder={handleAddOrder}
+        />
+      )}
+
+      {/* Add Order Modal */}
+      {modalType === "report" && (
+        <RouteDecisionModal
+          open={isModalOpen}
+          onOpenChange={(open) => {
+            if (!open) closeModal();
+          }}
         />
       )}
 

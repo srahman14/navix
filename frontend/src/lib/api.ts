@@ -1,4 +1,4 @@
-import { Order, RouteData, Vehicle } from "@/types";
+import { Order, RouteData, ScoredRoute, Vehicle } from "@/types";
 import React from "react";
 
 export const getRoute = async (coordinates: any, profile: string = "driving-car") => {
@@ -74,6 +74,37 @@ export const getRouteScore = async (
         vehicle,
         orders,
         scoringMode: scoringMode ?? "relative",
+      }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message);
+  }
+
+  return data.content;
+};
+
+export const getRouteDecisionReport = async (
+  routes: ScoredRoute[],
+  vehicle: Vehicle,
+  orders: Order[],
+  scoringMode: string,
+) => {
+  const response = await fetch(
+    "http://localhost:8080/api/v1/report",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        routes,
+        vehicle,
+        orders,
+        scoringMode,
       }),
     }
   );
