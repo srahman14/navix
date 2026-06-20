@@ -34,6 +34,7 @@ const NavigationSidebar: React.FC = () => {
   const assignOrderToVehicle = useNavigationStore((state) => state.assignOrderToVehicle);
   const selectedOrder = useNavigationStore((state) => state.selectedOrder);
   const generateRouteDecisionReport = useNavigationStore((state) => state.generateRouteDecisionReport);
+  const generateExplanation = useNavigationStore((state) => state.generateRouteExplanation);
   
 
   console.log("route caches", {
@@ -68,6 +69,7 @@ const NavigationSidebar: React.FC = () => {
 
     openModal("report");
     generateRouteDecisionReport(selectedOrder.vehicle_id);
+    generateExplanation(selectedOrder.vehicle_id);
   };
 
   console.log(vehicles)

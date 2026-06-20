@@ -55,6 +55,7 @@ export type ScoredRoute = RouteData & {
   metrics: RouteMetrics;
 } 
 
+// For report generator
 export interface RouteReport {
   vehicleId: string;
   vehicleType: string;
@@ -72,6 +73,7 @@ export interface RouteReport {
   summary: string;
 }
 
+// For report generator
 export interface RouteDecisionReport {
   vehicleId: string,
   vehicleType: string,
@@ -85,4 +87,27 @@ export interface RouteDecisionReport {
   bestRouteIndex: number;
   score?: number;
   generatedAt: Date,
+}
+
+// For explaination engine
+export interface RouteBreakdown {
+  index: number;
+  score: number;
+  deltaFromBest: number;
+
+  keyFactors: {
+    distanceScore: number;
+    durationScore: number;
+    capacityPenalty: number;
+  };
+
+  reason: string;
+}
+
+export interface RouteExplanation {
+  bestRouteIndex: number;
+  explanation: string;
+  routeBreakdown: RouteBreakdown[];
+  scoringMode: string;
+  generatedAt: string;
 }
