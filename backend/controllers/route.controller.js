@@ -1,4 +1,5 @@
 import { fetchFromORS } from "../services/ors.service.js";
+import { generateRouteReport } from "../services/reportGenerator.service.js";
 import { computeScoreRoute } from "../services/scoringEngine.service.js";
 
 export async function getRouteForProfile(req, res) {
@@ -55,6 +56,43 @@ export async function getScoreForRoute(req, res) {
     res.status(500).json({ 
         success: false, 
         message: error.message 
+    });
+  }
+}
+
+export async function getRouteReport(req, res) {
+  const {
+    routes,
+    vehicle,
+    orders,
+    scoringMode = "absolute",
+  } = req.body;
+
+  if (!routes || !vehicle || !orders) {
+    return res.status(400).json({
+      success: false,
+      message: "routes, vehicle and orders are required",
+    });
+  }
+
+  try {
+    const report = await generateRouteReport(
+      routes,
+      vehicle,
+      orders,
+      scoringMode
+    );
+
+    res.status(200).json({
+      success: true,
+      content: report,
+    });
+  } catch (error) {
+    console.error("Report generation error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 }

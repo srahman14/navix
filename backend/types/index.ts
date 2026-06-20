@@ -21,3 +21,20 @@ export type RouteInfo = {
   distance: number | null;
   duration: number | null;
 };
+
+type RouteReport = {
+  vehicleId: string;
+  vehicleType: string;
+  ordersAssigned: number;
+
+  totalDistance: number;
+  totalDuration: number;
+
+  routeScore: number;
+  capacityUsedPercent: number;
+
+  scoringMode: string;
+  generatedAt: string;
+
+  summary: string;
+};
