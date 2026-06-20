@@ -7,9 +7,16 @@ import type {
   ScoredRoute,
   RouteDecisionReport,
   RouteExplanation,
+  RouteDecision,
 } from "@/types";
 import toast from "react-hot-toast";
-import { getRoute, getRouteDecisionReport, getRouteExplanation, getRouteScore } from "@/lib/api";
+import {
+  getRoute,
+  getRouteDecision,
+  getRouteDecisionReport,
+  getRouteExplanation,
+  getRouteScore,
+} from "@/lib/api";
 import { supabase } from "@/lib/supabaseClient";
 import {
   createVehicle,
@@ -83,7 +90,7 @@ type NavigationStore = {
   routeError: string | null;
 
   // Route Report
-  routeDecisionReport: RouteDecisionReport | null;
+  // routeDecisionReport: RouteDecisionReport | null;
   isGeneratingReport: boolean;
   reportError: string | null;
 
@@ -91,6 +98,9 @@ type NavigationStore = {
   routeExplanation: RouteExplanation | null;
   isGeneratingExplanation: boolean;
   explanationError: string | null;
+
+  // Route Decision Engine (Report Generator + Explanation Engine)
+  routeDecision: RouteDecision | null;
 
   // Actions
   // Vehicles
@@ -175,7 +185,7 @@ type NavigationStore = {
   getOptimizedOrderSequence: (VehicleId: string | undefined) => Order[];
 
   // Route Report
-  generateRouteDecisionReport: (VehicleId: string) => Promise<void>;
+  generateRouteDecision: (VehicleId: string) => Promise<void>;
 
   // Route Report Explaination
   generateRouteExplanation: (vehicleId: string) => Promise<void>;
@@ -205,12 +215,16 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   locationCache: {},
   isLoadingRoute: false,
   routeError: null,
-  routeDecisionReport: null,
+  // Related to Report Generator
+  // routeDecisionReport: null,
   isGeneratingReport: false,
   reportError: null,
+  // Related to Explanation Engine (v1)
   routeExplanation: null,
   isGeneratingExplanation: false,
   explanationError: null,
+  // Related to Decision Engine (v1)
+  routeDecision: null,
 
   // Vehicle Actions
   setVehicles: (vehicles) => set({ vehicles }),
@@ -881,7 +895,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     return ordered;
   },
 
-  generateRouteDecisionReport: async (vehicleId) => {
+  generateRouteDecision: async (vehicleId) => {
     try {
       set({
         isGeneratingReport: true,
@@ -905,14 +919,15 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
       const scoringMode = orders.length === 1 ? "absolute" : "relative";
 
-      // console.log("REPORT PAYLOAD", {
-      //   routes: cached.routes,
-      //   vehicle,
-      //   orders,
-      //   scoringMode,
-      // });
+      // Debugging
+      console.log("REPORT PAYLOAD (Decision Engine) ", {
+        routes: cached.routes,
+        vehicle,
+        orders,
+        scoringMode,
+      });
 
-      const report = await getRouteDecisionReport(
+      const decision = await getRouteDecision(
         cached.routes,
         vehicle,
         orders,
@@ -920,12 +935,14 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       );
 
       set({
-        routeDecisionReport: report,
+        routeDecision: decision,
         isGeneratingReport: false,
       });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to generate report";
+        error instanceof Error
+          ? error.message
+          : "Failed to generate route decision";
 
       set({
         reportError: message,
@@ -958,13 +975,13 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
       const scoringMode = orders.length === 1 ? "absolute" : "relative";
 
-      console.log("REPORT PAYLOAD", {
-        routes: cached.routes,
-        vehicle,
-        orders,
-        scoringMode,
-      });
-
+      // Debugging
+      // console.log("REPORT PAYLOAD", {
+      //   routes: cached.routes,
+      //   vehicle,
+      //   orders,
+      //   scoringMode,
+      // });
 
       const explanation = await getRouteExplanation(
         cached.routes,
