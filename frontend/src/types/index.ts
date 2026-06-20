@@ -56,22 +56,22 @@ export type ScoredRoute = RouteData & {
 } 
 
 // For report generator
-export interface RouteReport {
-  vehicleId: string;
-  vehicleType: string;
-  ordersAssigned: number;
+// export interface RouteReport {
+//   vehicleId: string;
+//   vehicleType: string;
+//   ordersAssigned: number;
 
-  totalDistance: number;
-  totalDuration: number;
+//   totalDistance: number;
+//   totalDuration: number;
 
-  routeScore: number;
-  capacityUsedPercent: number;
+//   routeScore: number;
+//   capacityUsedPercent: number;
 
-  scoringMode: string;
-  generatedAt: string;
+//   scoringMode: string;
+//   generatedAt: string;
 
-  summary: string;
-}
+//   summary: string;
+// }
 
 // For report generator
 export interface RouteDecisionReport {
@@ -109,5 +109,12 @@ export interface RouteExplanation {
   explanation: string;
   routeBreakdown: RouteBreakdown[];
   scoringMode: string;
+  generatedAt: string;
+}
+
+// Decision Engine
+export interface RouteDecision {
+  report: RouteDecisionReport;
+  explanation: RouteExplanation;
   generatedAt: string;
 }
