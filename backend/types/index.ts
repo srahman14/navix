@@ -22,7 +22,7 @@ export type RouteInfo = {
   duration: number | null;
 };
 
-type RouteReport = {
+export type RouteReport = {
   vehicleId: string;
   vehicleType: string;
   ordersAssigned: number;
@@ -38,3 +38,22 @@ type RouteReport = {
 
   summary: string;
 };
+
+export type RouteExplanation = {
+  bestRouteIndex: number;
+  explanation: string;
+
+  routeBreakdown: {
+    index: number;
+    score: number;
+    deltaFromBest: number;
+
+    keyFactors: {
+      distanceScore: number;
+      durationScore: number;
+      capacityPenalty: number;
+    };
+
+    reason: string;
+  }[];
+}

@@ -117,3 +117,34 @@ export const getRouteDecisionReport = async (
 
   return data.content;
 };
+
+export const getRouteExplanation = async (
+  routes: ScoredRoute[],
+  vehicle: Vehicle,
+  orders: Order[],
+  scoringMode: string
+) => {
+  const response = await fetch(
+    "http://localhost:8080/api/v1/explanation",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        routes,
+        vehicle,
+        orders,
+        scoringMode,
+      }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message);
+  }
+
+  return data.content;
+};
