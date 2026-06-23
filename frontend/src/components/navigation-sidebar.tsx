@@ -36,14 +36,15 @@ const NavigationSidebar: React.FC = () => {
   const generateExplanation = useNavigationStore((state) => state.generateRouteExplanation);
   const generateRouteDecision = useNavigationStore((state) => state.generateRouteDecision);  
 
-  console.log("route caches", {
-    routeCache
-  })
-    // console.log("Optimized Order Seq", 
-    //   useNavigationStore.getState().getOptimizedOrderSequence(
-    //     useNavigationStore.getState().selectedVehicle?.db_id
-    //   )
-    // )
+  // Debugging
+  // console.log("route caches", {
+  //   routeCache
+  // })
+  // console.log("Optimized Order Seq", 
+  //   useNavigationStore.getState().getOptimizedOrderSequence(
+  //     useNavigationStore.getState().selectedVehicle?.db_id
+  //   )
+  // )
   
 
   const handleAddVehicle = async (vehicle: Vehicle) => {
@@ -72,7 +73,6 @@ const NavigationSidebar: React.FC = () => {
     // generateExplanation(selectedOrder.vehicle_id);
   };
 
-  console.log(vehicles)
   return (
     <>
       <motion.div
@@ -101,9 +101,9 @@ const NavigationSidebar: React.FC = () => {
               <button onClick={() => handleGenerateReport()} className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
                 Generate Report
               </button>
-              <button className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold rounded-lg transition-colors">
+              {/* <button className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold rounded-lg transition-colors">
                 View Reports
-              </button>
+              </button> */}
               {/* <button className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 font-semibold rounded-lg transition-colors">
                 Get route
               </button> */}

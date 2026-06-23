@@ -112,7 +112,7 @@ export const AddOrderModal: React.FC<AddOrderModalProps> = ({
       vehicle_id: formData.selectedVehicleId || null,
     };
 
-    console.log("Creating order", newOrder);
+    // console.log("Creating order", newOrder);
 
     if (editMode && editingOrderId != null) {
       const updatedOrder: Order = {

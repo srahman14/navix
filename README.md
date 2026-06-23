@@ -284,6 +284,36 @@ navix/
 
 ---
 
+# Deplyoment
+## Frontend
+The frontend is deployed on Vercel.
+
+- Framework: Next.js
+- Hosting: Vercel
+
+Environment Variables:
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_API_URL=...
+```
+## Backend
+The backend is deployed on Render as a Node.js Web Service.
+
+- Runtime: Node.js (Express)
+- Hosting: Render Web Service
+- Entry Point: src/server.js
+- Start Command: npm start
+
+Environment Variables:
+```bash
+NODE_ENV=production
+ORS_API_KEY=...
+ORS_API_URL_CAR=...ORS API for driving-car (more info: https://openrouteservice.org/dev/#/api-docs)
+FRONTEND_URL=...
+PORT=8080
+```
+
 # Future Improvements
 
 Planned features for future versions include:

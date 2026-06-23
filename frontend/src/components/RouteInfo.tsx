@@ -46,7 +46,7 @@ export const RouteInfo: React.FC = () => {
 
   useEffect(() => {
     if (!selectedOrder?.vehicle_id || !selectedOrder?.location) {
-      console.log("Selected Vehicle/Order was null");
+      // console.log("Selected Vehicle/Order was null");
 
       setStartLocation("");
       setEndLocation("");
@@ -58,7 +58,8 @@ export const RouteInfo: React.FC = () => {
 
     // Check if location is already cached
     const cachedLocation = getCachedLocation(cacheKey);
-    console.log("route location was cached", { cacheKey: cachedLocation });
+    // Debugging
+    // console.log("route location was cached", { cacheKey: cachedLocation });
     if (cachedLocation && cachedLocation.length >= 2) {
       setStartLocation(
         cachedLocation[0].road +

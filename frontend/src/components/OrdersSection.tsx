@@ -73,12 +73,12 @@ export const OrdersSection: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log("Deleting order", 
-                        {
-                          id: order.id,
-                          db_id: order.db_id
-                        }
-                      )
+                      // console.log("Deleting order", 
+                      //   {
+                      //     id: order.id,
+                      //     db_id: order.db_id
+                      //   }
+                      // )
                       // asserting for now - refactor later
                       deleteOrder(order.db_id!);
                     }}

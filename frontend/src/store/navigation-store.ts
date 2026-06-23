@@ -327,7 +327,8 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       // invalidate route for vehicle
       get().invalidateVehicleRoute(updated.id);
 
-      console.log("Vehicle updated -> route invalidation needed");
+      // Debugging
+      // console.log("Vehicle updated -> route invalidation needed");
 
       toast.success("Vehicle updated");
     } catch (err) {
@@ -705,11 +706,11 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
       toast.success("Order assigned to vehicle");
     } catch (err) {
       console.log("assignOrderToVehicle error:", JSON.stringify(err, null, 2));
-      console.log("raw error:", err);
+      // console.log("raw error:", err);
 
-      if (err instanceof Error) {
-        console.log(err.message);
-      }
+      // if (err instanceof Error) {
+      //   console.log(err.message);
+      // }
 
       toast.error("Failed to assign order");
     }
