@@ -1,12 +1,15 @@
 import { Order, RouteData, ScoredRoute, Vehicle } from "@/types";
 import React from "react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+
 export const getRoute = async (coordinates: any, profile: string = "driving-car") => {
   if (!coordinates || coordinates.length < 2) {
     throw new Error("Invalid coordinates");
   }
 
-  const response = await fetch("http://localhost:8080/api/v1/route", {
+  const response = await fetch(`${API_URL}/api/v1/route`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -36,7 +39,7 @@ export const getLocation = async (coordinates: any) => {
     throw new Error("Invalid coordinates");
   }
 
-  const response = await fetch("http://localhost:8080/api/v1/geocode", {
+  const response = await fetch(`${API_URL}/api/v1/geocode`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -63,7 +66,7 @@ export const getRouteScore = async (
   scoringMode: string
 ) => {
   const response = await fetch(
-    "http://localhost:8080/api/v1/score",
+    `${API_URL}/api/v1/score`,
     {
       method: "POST",
       headers: {
@@ -94,7 +97,7 @@ export const getRouteDecisionReport = async (
   scoringMode: string,
 ) => {
   const response = await fetch(
-    "http://localhost:8080/api/v1/report",
+    `${API_URL}/api/v1/report`,
     {
       method: "POST",
       headers: {
@@ -125,7 +128,7 @@ export const getRouteExplanation = async (
   scoringMode: string
 ) => {
   const response = await fetch(
-    "http://localhost:8080/api/v1/explanation",
+    `${API_URL}/api/v1/explanation`,
     {
       method: "POST",
       headers: {
@@ -156,7 +159,7 @@ export const getRouteDecision = async (
   scoringMode: string
 ) => {
   const response = await fetch(
-    "http://localhost:8080/api/v1/decision",
+    `${API_URL}/api/v1/decision`,
     {
       method: "POST",
       headers: {

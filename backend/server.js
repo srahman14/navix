@@ -5,11 +5,17 @@ import cors from "cors";
 import navigation from "./routes/navigation.route.js";
 
 const app = express();
-const port = 8080;
+const PORT = process.env.PORT || 8080;
 
 // Middleware
+const allowedOrigins = process.env.FRONTEND_URL;
+
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: [
+    "http://localhost:3000",
+    allowedOrigins,
+    ,
+  ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 }));
@@ -22,6 +28,7 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "OK",
+    env: process.env.NODE_ENV,
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   });
@@ -38,6 +45,6 @@ app.use("/api/v1/", navigation);
 // Returns: the route for that orderID
 // Frontend displays the route for that orderID on map
 
-app.listen(port, () => {
-  console.log(`App listening on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`App listening on port ${PORT}`);
 });
