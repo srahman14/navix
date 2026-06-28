@@ -189,12 +189,16 @@ Example variables:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_API_URL=...
 ```
 
 ### Backend
 
 ```env
+NODE_ENV=production
 ORS_API_KEY=...
+ORS_API_URL_CAR=...ORS API for driving-car (more info: https://openrouteservice.org/dev/#/api-docs)
+FRONTEND_URL=...
 PORT=8080
 ```
 
